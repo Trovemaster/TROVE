@@ -9854,6 +9854,7 @@ endif
    has_r2_mep = .false.
    !
    do i = 1, size(force)
+     if (force(i) == 0.0_ark) cycle
      p1 = molec%pot_ind(1,i)
      m  = molec%pot_ind(3,i)
      if (p1 == -1) then
@@ -9873,6 +9874,7 @@ endif
    !
    v = 0.0_ark
    do i = 1, size(force)
+     if (force(i) == 0.0_ark) cycle
      p1 = molec%pot_ind(1,i)
      p2 = molec%pot_ind(2,i)
      m  = molec%pot_ind(3,i)

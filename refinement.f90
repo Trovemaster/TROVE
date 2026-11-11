@@ -192,7 +192,7 @@ contains
          !
          ! do the fitting
          !
-         if (trim(job%IOfitpot_action)=='READ') then 
+         if (trim(job%IOfitpot_action)=='READ'.or.(trim(job%IOfitpot_action)=='SAVE'.and..not.job%IOfitpot_divide)) then 
            !
            call sf_fitting(Jval)
            !
@@ -347,7 +347,7 @@ contains
       character(len=cl),allocatable :: nampar(:)    ! parameter names 
       real(ark),allocatable :: pot_terms(:)
       !
-      integer(ik),allocatable :: ivar(:),ilargest(:),ifitparam(:)
+      integer(ik),allocatable :: ivar(:),ilargest(:),ifitparam(:),N_init(:)
       !
       logical      :: still_run,do_deriv,deriv_recalc
       real(rk)     :: stadev_old,stadev_before,stability,stadev,tempx,deltax,v,potright,potleft,sum_sterr,conf_int
@@ -447,7 +447,8 @@ contains
        !
        allocate (enercalc(en_npts),stat=info)
        call ArrayStart('obs-en-mat',info,size(enercalc),kind(enercalc))
-       allocate (mark(en_npts),stat=info)
+       allocate (mark(en_npts),N_init(en_npts),stat=info)
+       forall(i=1:en_npts) N_init(i) = fitting%obs(i)%N
        allocate (wtall(npts),stat=info)
        call ArrayStart('weight-mat',info,size(wtall),kind(wtall))
        allocate (wt_bit(npts),stat=info)
@@ -592,8 +593,8 @@ contains
        write(my_fmt_pot1,'(a,i0,a)') "(",ncoords,"(20x),4x,a,9x,a,8x,a,5x,a)"
 
        write(my_fmt_pot2,'(a1,i0,a)') "(",ncoords,"(2x,f18.9),2(1x,g16.9),1x,f12.5,1x,e12.4)"
-       write(my_fmt_par1,   '(a,i0,a)') "(a8,4x,",Ncoords,"i3,2x,e22.14)"
-       write(my_fmt_par_fit,'(a,i0,a)') "(a8,4x,",Ncoords,"i3,2x,e22.14,4x,a3)"
+       write(my_fmt_par1,   '(a,i0,a)') "(a14,2x,",Ncoords,"i4,2x,e22.14)"
+       write(my_fmt_par_fit,'(a,i0,a)') "(a14,2x,",Ncoords,"i4,2x,e22.14,4x,a3)"
        !
        nlevels = Neigenlevels
        !
@@ -768,52 +769,37 @@ contains
                    !
                  enddo 
                  !
-                 do i=1,extF%rank
-                   !
-                   !read (iunit,rec=i) pot_matrix(1:matsize)
-                   !
-                   if (job%IOfitpot_divide) then
-                     !
-                     ! we can sckip the parameter if it is zero and not used in refinement for the sliced-representation
-                     ! 
+                 if (job%IOfitpot_divide) then
+                   do i=1,extF%rank
+                     if (trim(extF%ftype)=='POTENTIAL'.and.ivar(i)<1) cycle
                      if ( ivar(i)==0.and.abs(pot_terms(i))<small_.or.ivar(i)<0 ) cycle
-                     !
                      call divided_slice_read(i,'potF',pot_suffix,Nentries,pot_matrix)
-                     !
-                   else
-                     !
-                     read(iunit) imu_t
-                     !
-                     if ( i/=imu_t ) then
-                       write (out,"(' pot_matrix at J = ',i4,', isym = ',i4,' i <> j: ',2i8)") jrot,isym,i,imu_t
-                       stop 'pot_matrix - i<>j'
-                     end if
-                     !
-                     read (iunit) pot_matrix
-                     !
-                   endif
-                   !
-                   !$omp parallel do private(ientry,jentry) shared(mat) schedule(guided)
-                   do ientry = 1, Nentries
-                     !
-                     do jentry = 1, ientry
-                       !
-                       !iroot = ientry*(ientry-1)/2+jentry
-                       !
-                       mat(ientry,jentry) = mat(ientry,jentry) + pot_terms(i)*pot_matrix(ientry,jentry)
-                       !
-                       mat(jentry,ientry) = mat(ientry,jentry)
-                       !
-                       if (fit_debug > 3) then
-                         write (out,"('mat (',i0,',',i0,')= ',es14.7)") ientry,jentry,mat(ientry,jentry)
-                       endif
-                       !
+                     !$omp parallel do private(ientry,jentry) shared(mat) schedule(guided)
+                     do ientry = 1, Nentries
+                       do jentry = 1, ientry
+                         mat(ientry,jentry) = mat(ientry,jentry) + pot_terms(i)*pot_matrix(ientry,jentry)
+                         mat(jentry,ientry) = mat(ientry,jentry)
+                       enddo
                      enddo
-                     !
+                     !$omp end parallel do
                    enddo
-                   !$omp end parallel do
-                   !
-                 enddo
+                 else
+                   do
+                     read(iunit,iostat=info) imu_t
+                     if (info/=0 .or. imu_t<1 .or. imu_t>extF%rank) exit
+                     read (iunit) pot_matrix
+                     i = imu_t
+                     if (abs(pot_terms(i))<=small_) cycle
+                     !$omp parallel do private(ientry,jentry) shared(mat) schedule(guided)
+                     do ientry = 1, Nentries
+                       do jentry = 1, ientry
+                         mat(ientry,jentry) = mat(ientry,jentry) + pot_terms(i)*pot_matrix(ientry,jentry)
+                         mat(jentry,ientry) = mat(ientry,jentry)
+                       enddo
+                     enddo
+                     !$omp end parallel do
+                   enddo
+                 endif
                  !
                  ! find the smallest absolute diagonal value of mat
                  !
@@ -920,6 +906,21 @@ contains
                  !
                  if (abs(fitting%threshold_lock)>0) then 
                    !
+                   if (fitting%threshold_lock<0) then
+                     do iener = 1,en_npts
+                       iJ = fitting%obs(iener)%Jrot ; igamma = fitting%obs(iener)%symmetry
+                       if (iJ==Jrot.and.igamma==isym) then
+                         mark(iener) = '*'
+                         if (N_init(iener)>=1 .and. N_init(iener)<=Nentries) then
+                           i = maxloc(abs(mat(N_init(iener),1:nroots)),dim=1)
+                           if (abs(mat(N_init(iener),i))>0.2_rk) then
+                             fitting%obs(iener)%N = i
+                             mark(iener) = ' '
+                           endif
+                         endif
+                       endif
+                     enddo
+                   else
                    if (fitting%threshold_lock<0)  maxiter_as = 1
                    !
                    i0 = 1
@@ -966,6 +967,7 @@ contains
                      endif 
                      !
                    enddo
+                   endif
                    !
                  endif
                  !
@@ -994,18 +996,16 @@ contains
                    !
                    ncol = 0
                    !
-                   do i=1,extF%rank
-                      !
+                   do iter_th=1,extF%rank
                       if (.not.job%IOfitpot_divide) then
-                        !
-                        read(iunit) imu_t
-                        !
+                        read(iunit,iostat=info) imu_t
+                        if (info/=0 .or. imu_t<1 .or. imu_t>extF%rank) exit
                         read (iunit) pot_matrix
-                        !
-                      elseif(ivar(i)>0) then !.and.abs(pot_terms(i))>small_) then
-                        !
-                        call divided_slice_read(i,'potF',pot_suffix,Nentries,pot_matrix)
-                        !
+                        i = imu_t
+                      else
+                        i = iter_th
+                        if (trim(extF%ftype)=='POTENTIAL'.and.ivar(i)<1) cycle
+                        if (ivar(i)>0) call divided_slice_read(i,'potF',pot_suffix,Nentries,pot_matrix)
                       endif
                       !
                       if (ivar(i) <=0) cycle
@@ -1041,6 +1041,8 @@ contains
                         iJ = fitting%obs(iener)%Jrot ; igamma = fitting%obs(iener)%symmetry
                         !
                         if (iJ==Jrot.and.igamma==isym) then 
+                          !
+                          if (wtall(iener)<=small_ .and. .not.(jrot==0.and.isym==1.and.fitting%obs(iener)%N==1)) cycle
                           !
                           ientry  = fitting%obs(iener)%N ;  if (ientry>nroots.or.isym>sym%Nrepresen) cycle 
                           !
@@ -1538,7 +1540,7 @@ contains
                    !
                    if (conf_int>1e10) conf_int = 0
                    !
-                   write(my_fmt_par2,'(a,i0,a)') "(a8,i4,2x,f22.",ndigits,",a1,i14,a1)"
+                   write(my_fmt_par2,'(a,i0,a)') "(a14,i4,2x,f22.",ndigits,",a1,i14,a1)"
                    !
                    write (out,my_fmt_par2) nampar(i),ivar(i),potparam(i),'(',nint(conf_int),')'
                    !
@@ -1549,7 +1551,7 @@ contains
                    ndigits =2
                    if (potparam(i).ne.0.0) ndigits = 8
                    !
-                   write(my_fmt_par2,'(a,i0,a)') "(a8,i4,2x,f22.",ndigits,")"
+                   write(my_fmt_par2,'(a,i0,a)') "(a14,i4,2x,f22.",ndigits,")"
                    !
                    write (out,my_fmt_par2) nampar(i),ivar(i),potparam(i)
                    !
@@ -1856,7 +1858,7 @@ contains
       real(rk),allocatable :: mat(:,:),dmat(:,:),vector(:)
       character(len=cl),allocatable :: nampar(:)    ! parameter names 
       !
-      integer(ik),allocatable :: ivar(:),ilargest(:),ifitparam(:),ilargest_j0(:,:)
+      integer(ik),allocatable :: ivar(:),ilargest(:),ifitparam(:),N_init(:),ilargest_j0(:,:)
       !
       logical      :: still_run,do_deriv,deriv_recalc
       real(rk) :: stadev_old,stability,stadev,tempx,deltax,v,potright,potleft,sum_sterr,conf_int
@@ -1945,7 +1947,8 @@ contains
        !
        allocate (enercalc(en_npts),stat=info)
        call ArrayStart('obs-en-mat',info,size(enercalc),kind(enercalc))
-       allocate (mark(en_npts),stat=info)
+       allocate (mark(en_npts),N_init(en_npts),stat=info)
+       forall(i=1:en_npts) N_init(i) = fitting%obs(i)%N
        allocate (wtall(npts),stat=info)
        call ArrayStart('weight-mat',info,size(wtall),kind(wtall))
        allocate (wt_bit(npts),stat=info)
@@ -2305,6 +2308,21 @@ contains
                  !
                  if (abs(fitting%threshold_lock)>0) then 
                    !
+                   if (fitting%threshold_lock<0) then
+                     do iener = 1,en_npts
+                       iJ = fitting%obs(iener)%Jrot ; igamma = fitting%obs(iener)%symmetry
+                       if (iJ==Jrot.and.igamma==isym) then
+                         mark(iener) = '*'
+                         if (N_init(iener)>=1 .and. N_init(iener)<=Nentries) then
+                           i = maxloc(abs(mat(N_init(iener),1:nroots)),dim=1)
+                           if (abs(mat(N_init(iener),i))>0.2_rk) then
+                             fitting%obs(iener)%N = i
+                             mark(iener) = ' '
+                           endif
+                         endif
+                       endif
+                     enddo
+                   else
                    if (fitting%threshold_lock<0)  maxiter_as = 1
                    !
                    i0 = 1
@@ -2351,6 +2369,7 @@ contains
                      endif 
                      !
                    enddo
+                   endif
                    !
                  endif
                  !
@@ -2430,6 +2449,8 @@ contains
                         iJ = fitting%obs(iener)%Jrot ; igamma = fitting%obs(iener)%symmetry
                         !
                         if (iJ==Jrot.and.igamma==isym) then 
+                          !
+                          if (wtall(iener)<=small_ .and. .not.(jrot==0.and.isym==1.and.fitting%obs(iener)%N==1)) cycle
                           !
                           ientry  = fitting%obs(iener)%N ;  if (ientry>nroots.or.isym>sym%Nrepresen) cycle 
                           !
@@ -4252,6 +4273,9 @@ contains
      !
      integer(ik)       :: jind,Jrot,isym,Nentries,ientry,ilevel,alloc,rec_len,i,parmax,iunit,junit,i1,i2
      real(rk)          :: f_t,dtemp0
+     integer(ik)       :: strm_u, strm_wait
+     logical           :: strm_ready
+     character(len=256) :: strm_fname, strm_done, strm_istr
      character(len=cl) :: unitfname,job_file
      !
      integer(ik)        :: chkptIO
@@ -4270,6 +4294,12 @@ contains
      type(coeffT),allocatable :: tmat(:)
      integer(ik),allocatable  :: cdimen(:),ktau_nnz(:),ktau_idx(:,:)
      real(rk),allocatable     :: psi(:,:,:),mat_t(:,:)
+     type psi_cache_T
+       real(rk),allocatable    :: psi(:,:,:)
+       integer(ik),allocatable :: ktau_nnz(:),ktau_idx(:,:)
+       integer(ik)             :: num_rlevels = 0
+     end type psi_cache_T
+     type(psi_cache_T),allocatable :: psi_cache(:,:)
      double precision,parameter :: alpha = 1.0d0,beta0=0.0d0,beta=1.0d0
      !
      if (job%verbose>=2) write(out,"(/'Prepare the matrix elements for the potential energy function')")   
@@ -4321,7 +4351,7 @@ contains
           write(out, '(a)') 'and converting them to the representaion of the eigenfunctions ... '
        end if
        !
-       if (job%IOextF_divide) then
+       if (job%IOextF_divide .or. job%IOextF_stream) then
          !
          ncontr_t = bset_contr(1)%Maxcontracts
          !
@@ -4460,6 +4490,191 @@ contains
           end select
        endif
        !
+       if (trim(fitting%method)=='FAST' .and. .not.job%IOextF_divide .and. .not.job%IOfitpot_divide) then
+         allocate(psi_cache(sym%Nrepresen,nJ))
+         do jind = 1, nJ
+           if (jind==1.and.fitting%J_list(1)/=0) cycle
+           Jrot = Jval(jind)
+           do isym = 1, sym%Nrepresen
+             Nentries = fit(isym,jind)%Nentries
+             if (Nentries<1) cycle
+             if (job%verbose>=4) write (out,"('Preloading psi for jrot = ',i0,'; sym = ',i0)") Jrot,isym
+             dimen = bset_contr(jind)%Maxcontracts
+             nsize = bset_contr(jind)%nsize(isym)
+             iunit = Jeigenvec_unit(jind,isym)
+             if (job%rotsym_do) then
+               num_rlevels = maxval(bset_contr(jind)%ktau(:),dim=1)
+               rot_size = num_rlevels*sym%maxdegen
+               allocate(psi(ncontr_t,Nentries,rot_size),stat=alloc)
+             else
+               num_rlevels = 0
+               allocate(psi(ncontr_t,Nentries,0:2*Jrot+1),stat=alloc)
+             endif
+             psi = 0
+             allocate(vec(nsize),stat=alloc)
+             if (alloc /= 0) stop 'fitting-vec allocation error: vec - out of memory'
+             do ientry = 1, Nentries
+               ilevel = fit(isym,jind)%ilevel(ientry)
+               irec = eigen(ilevel)%irec(1)
+               read(iunit, rec = irec) vec(1:nsize)
+               !$omp parallel do private(idimen,irow,ib,ktau,icontr,iterm,dtemp0,nelem,ielem,isrootI,ideg_rot) shared(psi) schedule(guided)
+               do idimen = 1, dimen
+                 irow = bset_contr(jind)%icontr2icase(idimen,1)
+                 ib   = bset_contr(jind)%icontr2icase(idimen,2)
+                 ktau = bset_contr(jind)%ktau(idimen)
+                 icontr = bset_contr(jind)%iroot_correlat_j0(idimen)
+                 if (job%rotsym_do) then
+                   ideg_rot = bset_contr(jind)%k(idimen)
+                   ktau = sym%maxdegen*(ktau-1)+ideg_rot
+                 endif
+                 iterm = ijterm(jind)%kmat(irow,isym)
+                 dtemp0 = 0
+                 nelem = bset_contr(jind)%irr(isym)%N(irow)
+                 do ielem = 1, nelem
+                   isrootI = iterm+ielem
+                   dtemp0 = dtemp0 + vec(isrootI)*bset_contr(jind)%irr(isym)%repres(isrootI,1,ib)
+                 enddo
+                 psi(icontr,ientry,ktau) = dtemp0
+               enddo
+               !$omp end parallel do
+             enddo
+             deallocate(vec)
+             allocate(ktau_nnz(lbound(psi,3):ubound(psi,3)),ktau_idx(ncontr_t,lbound(psi,3):ubound(psi,3)))
+             do ktau = lbound(psi,3), ubound(psi,3)
+               sub_n = 0
+               do icontr = 1, ncontr_t
+                 if (any(psi(icontr,:,ktau) /= 0.0_rk)) then
+                   sub_n = sub_n + 1
+                   ktau_idx(sub_n,ktau) = icontr
+                   if (sub_n < icontr) psi(sub_n,:,ktau) = psi(icontr,:,ktau)
+                 endif
+               enddo
+               ktau_nnz(ktau) = sub_n
+             enddo
+             psi_cache(isym,jind)%num_rlevels = num_rlevels
+             call move_alloc(psi, psi_cache(isym,jind)%psi)
+             call move_alloc(ktau_nnz, psi_cache(isym,jind)%ktau_nnz)
+             call move_alloc(ktau_idx, psi_cache(isym,jind)%ktau_idx)
+             iunit = fit(isym,jind)%IOunit
+             write(iunit) 'start potfit'
+           enddo
+         enddo
+         if (.not. job%IOextF_stream) then
+           read(chkptIO) buf20
+           read(chkptIO) ncontr_t
+         endif
+         do i = 1, fitting%iparam(2)
+           if (trim(extF%ftype)=='POTENTIAL'.and.extF%ifit(1,i)<1) cycle
+           if (job%IOextF_stream) then
+             write(strm_istr, '(i0)') i
+             strm_fname = '/tmp/hcn_ext_stream/extmat_' // trim(adjustl(strm_istr)) // '.chk'
+             strm_done  = trim(strm_fname) // '.done'
+             strm_wait  = 0
+             do
+               inquire(file=trim(strm_done), exist=strm_ready)
+               if (strm_ready) exit
+               call sleep(1)
+               strm_wait = strm_wait + 1
+               if (mod(strm_wait, 60) == 0 .and. job%verbose>=3) then
+                 write(out,"(' STREAM waiting for producer slice ',a)") trim(strm_done)
+                 flush(out)
+               endif
+             enddo
+             open(newunit=strm_u, form='unformatted', action='read', position='rewind', status='old', file=trim(strm_fname))
+             read(strm_u) imu_t
+             if (imu_t /= i) then
+               write(out,"(' prepare_pot_matrix STREAM mismatch: expected ',i0,' got ',i0)") i, imu_t
+               stop 'prepare_pot_matrix - stream index mismatch'
+             endif
+             read(strm_u) poten_
+             close(strm_u, status='delete')
+             open(newunit=strm_u, form='formatted', action='read', status='old', file=trim(strm_done))
+             close(strm_u, status='delete')
+             if (job%verbose>=4) then
+               write(out,"(' STREAM consumed fitpot slice i = ',i0)") i
+               flush(out)
+             endif
+           else
+             read(chkptIO) imu_t
+             read(chkptIO) poten_
+           endif
+           if (i<fitting%iparam(1)) cycle
+           do jind = 1, nJ
+             if (jind==1.and.fitting%J_list(1)/=0) cycle
+             Jrot = Jval(jind)
+             do isym = 1, sym%Nrepresen
+               Nentries = fit(isym,jind)%Nentries
+               if (Nentries<1) cycle
+               allocate(pot_matrix(Nentries,Nentries),mat_t(Nentries,ncontr_t),stat=alloc)
+               pot_matrix = 0
+               if (job%rotsym_do) then
+                 do k = 1, psi_cache(isym,jind)%num_rlevels
+                   do itau = 1, sym%maxdegen
+                     ktau = sym%maxdegen*(k-1)+itau
+                     sub_n = psi_cache(isym,jind)%ktau_nnz(ktau)
+                     if (sub_n < 1) cycle
+                     do i2 = 1, sub_n
+                       do i1 = 1, sub_n
+                         pot_sub(i1,i2) = poten_(psi_cache(isym,jind)%ktau_idx(i1,ktau),psi_cache(isym,jind)%ktau_idx(i2,ktau))
+                       enddo
+                     enddo
+                     call dgemm('T','N',Nentries,sub_n,sub_n,alpha,psi_cache(isym,jind)%psi(1,1,ktau),ncontr_t,&
+                                 pot_sub,ncontr_t,beta0,mat_t,Nentries)
+                     call dgemm('N','N',Nentries,Nentries,sub_n,alpha,mat_t,Nentries,&
+                                 psi_cache(isym,jind)%psi(1,1,ktau),ncontr_t,beta,pot_matrix,Nentries)
+                   enddo
+                 enddo
+               else
+                 do k = 0, Jrot
+                   do itau = 0, 1
+                     ktau = 2*k+itau
+                     sub_n = psi_cache(isym,jind)%ktau_nnz(ktau)
+                     if (sub_n < 1) cycle
+                     do i2 = 1, sub_n
+                       do i1 = 1, sub_n
+                         pot_sub(i1,i2) = poten_(psi_cache(isym,jind)%ktau_idx(i1,ktau),psi_cache(isym,jind)%ktau_idx(i2,ktau))
+                       enddo
+                     enddo
+                     call dgemm('T','N',Nentries,sub_n,sub_n,alpha,psi_cache(isym,jind)%psi(1,1,ktau),ncontr_t,&
+                                 pot_sub,ncontr_t,beta0,mat_t,Nentries)
+                     call dgemm('N','N',Nentries,Nentries,sub_n,alpha,mat_t,Nentries,&
+                                  psi_cache(isym,jind)%psi(1,1,ktau),ncontr_t,beta,pot_matrix,Nentries)
+                   enddo
+                 enddo
+               endif
+               iunit = fit(isym,jind)%IOunit
+               write(iunit) i
+               write(iunit) pot_matrix
+               deallocate(pot_matrix,mat_t)
+             enddo
+           enddo
+         enddo
+         if (.not. job%IOextF_stream) then
+           read(chkptIO) buf20(1:18)
+           if (buf20(1:18)/='End external field') then
+             write (out,"(' prepare_pot_matrix ',a,' has bogus footer: ',a)") job%kinetmat_file,buf20(1:17)
+             stop 'prepare_pot_matrix - bogus file format'
+           end if
+         endif
+         do jind = 1, nJ
+           if (jind==1.and.fitting%J_list(1)/=0) cycle
+           Jrot = Jval(jind)
+           do isym = 1, sym%Nrepresen
+             Nentries = fit(isym,jind)%Nentries
+             if (Nentries<1) cycle
+             iunit = fit(isym,jind)%IOunit
+             write(iunit) 'end potfit'
+             close(iunit)
+             write(jchar, '(i4)') jrot
+             write(symchar, '(i4)') isym
+             pot_suffix = trim(job%fitpot_file)//trim(adjustl(jchar))//'_'//trim(adjustl(symchar))
+             filename = trim(pot_suffix)//'.chk'
+             open(fit(isym,jind)%IOunit,form='unformatted',position='rewind',status='old',action='read',file=filename)
+             deallocate(psi_cache(isym,jind)%psi,psi_cache(isym,jind)%ktau_nnz,psi_cache(isym,jind)%ktau_idx)
+           enddo
+         enddo
+         deallocate(psi_cache)
+       else
        do jind = 1, nJ
           !
           if (jind==1.and.fitting%J_list(1)/=0) cycle
@@ -4658,6 +4873,7 @@ contains
             endif
             !
             do i=1,fitting%iparam(2)
+              if (trim(extF%ftype)=='POTENTIAL'.and.extF%ifit(1,i)<1) cycle
               !
               if (.not.job%IOextF_divide) then 
                 !
@@ -4829,10 +5045,11 @@ contains
          enddo
          !
        end do
+       endif
        !
        deallocate(poten_,pot_sub)
        !
-       if (.not.job%IOextF_divide) then
+       if (.not.job%IOextF_divide .and. .not.job%IOextF_stream) then
          close(chkptIO,status='keep')
        endif
        !

@@ -9947,11 +9947,7 @@ module perturbation
      vrange(1) = -0.0_rk ; vrange(2) = job%upper_ener+job%partfunc%ZPE
      irange(1) = 1 ; irange(2) = min(job%nroots(gamma),dimen_s)
      !
-     if (irange(2)==dimen_s) then
-        !
-        rng = 'A'
-        !
-     elseif (irange(2)<dimen_s) then
+     if (irange(2)<dimen_s) then
         !
         rng = 'I'
         !
@@ -16448,6 +16444,7 @@ module perturbation
             job_is = 'externalF'
             !
             do imu = fitting%iparam(1),fitting%iparam(2)
+              if (trim(extF%ftype)=='POTENTIAL'.and.extF%ifit(1,imu)<1) cycle
               !
               if (job%verbose>=4) write(out,"('imu = ',i8)",advance='NO') imu
               !
@@ -16533,7 +16530,7 @@ module perturbation
             !
           endif 
           !
-          if (.not.job%IOextF_divide) write(chkptIO) 'End external field'
+          if (.not.job%IOextF_divide .and. .not.job%IOextF_stream) write(chkptIO) 'End external field'
           !
         endif
         !
@@ -16897,6 +16894,10 @@ module perturbation
     type(PTcoeffsT)    :: tmat(PT%Nclasses)
     type(PTcoeffT),pointer        :: fl
     integer(ik), allocatable      :: icontr_vs_isym(:,:)
+    integer(ik)                   :: stream_u, n_stream_written, iprev_imu, wait_cnt
+    integer(ik)                   :: prev_imus(4096)
+    character(len=256)            :: stream_fname, done_fname, prev_fname, imu_str
+    logical                       :: stream_ex
       !
       !
       call TimerStart('Contracted matelements-class')
@@ -17770,17 +17771,24 @@ module perturbation
                stop 'PTcontracted_matelem_class - illegal use of EXTERNAL for J/=0'
             endif 
             !
-            ! Prepare the checkpoint file
-            !
-            job_is ='external field contracted matrix elements for J=0'
-            call IOStart(trim(job_is),chkptIO)
-            !
-            open(chkptIO,form='unformatted',action='write',position='rewind',status='replace',file=job%extFmat_file)
-            write(chkptIO) 'Start external field'
-            !
-            ! store the matrix elements 
-            !
-            write(chkptIO) PT%Maxcontracts
+            if (job%IOextF_stream) then
+              if (job%verbose>=2) write(out,"('Streaming external field slices to /tmp/hcn_ext_stream/extmat_*.chk')")
+              n_stream_written = 0
+            else
+              !
+              ! Prepare the checkpoint file
+              !
+              job_is ='external field contracted matrix elements for J=0'
+              call IOStart(trim(job_is),chkptIO)
+              !
+              open(chkptIO,form='unformatted',action='write',position='rewind',status='replace',file=job%extFmat_file)
+              write(chkptIO) 'Start external field'
+              !
+              ! store the matrix elements 
+              !
+              write(chkptIO) PT%Maxcontracts
+              !
+            endif
             !
           endif 
           !
@@ -17792,6 +17800,7 @@ module perturbation
             job_is = 'externalF'
             !
             do imu = fitting%iparam(1),fitting%iparam(2)
+              if (trim(extF%ftype)=='POTENTIAL'.and.extF%ifit(1,imu)<1) cycle
               !
               if (job%verbose>=4) write(out,"('imu = ',i8)",advance='NO') imu
               !
@@ -17822,6 +17831,41 @@ module perturbation
                 !
                 call write_divided_slice(imu,'extF',job%extmat_suffix,mdimen,extF_t)
                 !
+              elseif (job%IOextF_stream) then
+                !
+                if (n_stream_written >= 3) then
+                  iprev_imu = prev_imus(n_stream_written - 2)
+                  write(imu_str, '(i0)') iprev_imu
+                  prev_fname = '/tmp/hcn_ext_stream/extmat_' // trim(adjustl(imu_str)) // '.chk.done'
+                  wait_cnt = 0
+                  do
+                    inquire(file=trim(prev_fname), exist=stream_ex)
+                    if (.not. stream_ex) exit
+                    call sleep(1)
+                    wait_cnt = wait_cnt + 1
+                    if (mod(wait_cnt, 60) == 0 .and. job%verbose>=3) then
+                      write(out,"(' STREAM waiting for consumer on ',a)") trim(prev_fname)
+                      flush(out)
+                    endif
+                  enddo
+                endif
+                !
+                write(imu_str, '(i0)') imu
+                stream_fname = '/tmp/hcn_ext_stream/extmat_' // trim(adjustl(imu_str)) // '.chk'
+                done_fname   = trim(stream_fname) // '.done'
+                !
+                open(newunit=stream_u, form='unformatted', action='write', position='rewind', status='replace', file=trim(stream_fname))
+                write(stream_u) imu
+                write(stream_u) extF_t
+                close(stream_u)
+                !
+                open(newunit=stream_u, form='formatted', action='write', status='replace', file=trim(done_fname))
+                write(stream_u, '(i0)') imu
+                close(stream_u)
+                !
+                n_stream_written = n_stream_written + 1
+                if (n_stream_written <= size(prev_imus)) prev_imus(n_stream_written) = imu
+                !
               else
                 !
                 ! always store the matrix elements of the extF moment 
@@ -17832,7 +17876,8 @@ module perturbation
                 !
               endif
               !
-              if (job%verbose>=4) write(out,"('...done')",advance='YES') 
+              if (job%verbose>=4) write(out,"('...done')",advance='YES')
+              if (job%IOextF_stream) flush(out)
               !
             enddo
             !
@@ -17871,7 +17916,7 @@ module perturbation
             !
           endif 
           !
-          if (.not.job%IOextF_divide) write(chkptIO) 'End external field'
+          if (.not.job%IOextF_divide .and. .not.job%IOextF_stream) write(chkptIO) 'End external field'
           !
         endif
         !
@@ -19694,7 +19739,7 @@ module perturbation
           !
           deallocate(extF_t)
           call ArrayStop('extF-fields')
-          if (.not.job%IOextF_divide) write(chkptIO) 'End external field'
+          if (.not.job%IOextF_divide .and. .not.job%IOextF_stream) write(chkptIO) 'End external field'
           !
           if (job%verbose>=2) write(out,"('...done!')")
           !
@@ -41270,7 +41315,7 @@ end subroutine combinations
           !
           deallocate(extF_t)
           call ArrayStop('extF-fields')
-          if (.not.job%IOextF_divide) write(chkptIO) 'End external field'
+          if (.not.job%IOextF_divide .and. .not.job%IOextF_stream) write(chkptIO) 'End external field'
           !
           if (job%verbose>=2) write(out,"('...done!')")
           !

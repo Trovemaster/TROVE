@@ -53,7 +53,10 @@ reproduces the J = 0 dipole matrix elements to 2×10⁻⁴ D.
 | `HCN_HNC_J0.inp`, `HCN_HNC_J1.inp`, `HCN_HNC_J2.inp` (+ `.out`) | J = 0 (kmax = 2, `MATELEM SAVE`), 1 and 2: rotational and ℓ-doubling constants of both isomers |
 | `potential.chk` | SPAR form of the PES (`POTENTIAL READ WITH_MODES`) |
 | `external.chk` | DMS expansion written by step 1 (`EXTERNAL SAVE`); use `EXTERNAL READ` to reuse it |
-| `HCN_CCSDT_AVQZ_poten.inp_block`, `HCN_CCSDT_AVQZ_dipole.inp_block` | PES and DMS parameter blocks (already included in the inputs) |
+| `HCN_CCSDT_AVQZ_poten.inp_block`, `HCN_CCSDT_AVQZ_dipole.inp_block` | Ab initio PES and DMS parameter blocks (already included in the inputs) |
+| `HCN_CCSDT_AVQZ_TROVE_refined_k8_staged_poten.inp_block`, `potential_refined_k8_staged.chk` | Staged $J \le 20$ ($K \le 8$) empirically refined PES block and SPAR `potential.chk` (2,653 MARVEL/Mellau HCN + HNC levels, $\text{RMS} = 0.193\text{ cm}^{-1}$) |
+| `HCN_HNC_k8_J0_20_stage4_147.inp/.out` | $J = 0..20$ ($K \le 8$) empirical PES refinement input and output |
+| `HCN_HNC_J0_k4_ref_step1.inp`, `HCN_HNC_J0_k4_ref_step2_tm.inp/.out`, `trove_j0_ref_G10.xsec` | $J = 0$ ($K \le 4$) parallel ($\Delta\ell = 0$) and perpendicular ($\Delta\ell = \pm 1$) transition moment inputs/outputs and $T = 300\text{--}2000\text{ K}$ cross sections (`G10`) using the refined PES + ab initio DMS |
 | `dvr_j0_check.py`, `dvr_J0_reference.out` | Independent J = 0 DVR check (NumPy/SciPy) and its converged output |
 | `run.sh` | Runs the whole sequence |
 
@@ -101,4 +104,9 @@ Rotational and ℓ-doubling constants from `HCN_HNC_J{0,1,2}.out` (cm⁻¹):
 | q(ν₂) | 0.007420 | 0.007488 | 0.010740 | |
 
 Frozen-core aug-cc-pVQZ gives stretching fundamentals 2.5–9 cm⁻¹ low and B₀ about 0.55% low,
-because r(CN) is 0.0035 Å too long. Empirical refinement to MARVEL energies is the next step.
+because r(CN) is 0.0035 Å too long. The empirically refined PES (`potential_refined_k8_staged.chk`,
+fitted to 2,653 MARVEL/Mellau levels up to $J = 20, K = 8$) reduces the overall ro-vibrational RMS
+to $0.193\text{ cm}^{-1}$ ($0.196\text{ cm}^{-1}$ for 1,543 HCN levels and $0.189\text{ cm}^{-1}$
+for 1,110 HNC levels) and reproduces ExoMol `1H-12C-14N__Harris` integrated opacities across
+$T = 300\text{--}1500\text{ K}$ to within $0.1\text{--}7.6\%$ while correcting the $+492.8\text{ cm}^{-1}$
+HNC isomerisation energy offset ($5212.22\text{ cm}^{-1}$ vs. $5705.00\text{ cm}^{-1}$ in `Harris`).

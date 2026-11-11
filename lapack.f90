@@ -741,7 +741,7 @@ module lapack
     if (verbose>=3) call TimerStop('lapack_ssyevr: diagonalization finished')
     !
     !$omp parallel do private(k) shared(h) schedule(dynamic)
-    do k=1,msize
+    do k=1,min(msize,max(1,n))
        h(:,k) = a(:,k)
     enddo
     !$omp end parallel do
@@ -808,7 +808,7 @@ module lapack
     endif
     !
     if (present(jobz)) then
-       jobz_ = jobz_
+       jobz_ = jobz
     endif
     !
     if (present(vrange).and.rng_=='V') then
@@ -889,7 +889,7 @@ module lapack
                 nh1,isuppz,twork,nwork,tiwork,niwork,info)
     !
     !$omp parallel do private(k) shared(h) schedule(dynamic)
-    do k=1,msize
+    do k=1,min(msize,max(1,n))
        h(:,k) = a(:,k)
     enddo
     !$omp end parallel do
@@ -1022,7 +1022,7 @@ module lapack
                 nh1,twork(1:nwork),nwork,iwork(1:nh1),ifail,info)
     !
     !$omp parallel do private(k) shared(h) schedule(dynamic)
-    do k=1,msize
+    do k=1,min(msize,max(1,n))
        h(:,k) = a(:,k)
     enddo
     !$omp end parallel do
@@ -2122,3 +2122,18 @@ module lapack
 
 
 end module lapack
+
+function ddoti(nz, x, indx, y) result(res)
+  use accuracy, only: ik, rk
+  implicit none
+  integer(ik), intent(in) :: nz
+  real(rk), intent(in)    :: x(*)
+  integer(ik), intent(in) :: indx(*)
+  real(rk), intent(in)    :: y(*)
+  real(rk)                :: res
+  integer(ik)             :: i
+  res = 0.0_rk
+  do i = 1, nz
+    res = res + x(i) * y(indx(i))
+  end do
+end function ddoti
