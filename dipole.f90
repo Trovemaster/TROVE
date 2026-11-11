@@ -5417,7 +5417,7 @@ contains
          !   return 
          !endif 
          !
-         if (job%triatom_sing_resolve) then
+         if (job%triatom_sing_resolve.and.trim(intensity%action)/='TM') then
             if (J==0.and.normal_0/=0) then
               passed = .false.
             endif
@@ -5457,7 +5457,7 @@ contains
          !   return 
          !endif 
          !
-         if (job%triatom_sing_resolve) then
+         if (job%triatom_sing_resolve.and.trim(intensity%action)/='TM') then
             if (J==0.and.normal_0/=0) then
               passed = .false.
             endif

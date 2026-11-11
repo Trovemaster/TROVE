@@ -352,6 +352,7 @@ module fields
       logical             :: IOmatelem_split_changed = .false.  ! in case we need to change the status of IOmatelem_split and do this again later 
       logical             :: IOExtF_divide = .false.      ! divide the ExtF checkpoint into pieces 
       logical             :: IOextF_stitch = .false.      ! stitch the ExF part during the J=0 conversion
+      logical             :: IOextF_stream = .false.      ! stream ExtF slices through temporary files
       logical             :: IOfitpot_divide = .false.    ! divide the ExtF checkpoint into pieces 
       character(len=cl)   :: compress_file  = 'compress'  ! the file name for storing the compressed eigenvectors will start with this character
       logical             :: matelem_append               ! append the matrix elements after the record (basis function) 
@@ -3241,6 +3242,10 @@ module fields
                !
                select case (trim(w))
                  !
+               case ('STREAM')
+                 !
+                 job%IOextF_stream = .true.
+                 !
                case ('DIVIDE', 'SPLIT')
                  !
                  job%IOextF_divide = .true.
@@ -3310,13 +3315,13 @@ module fields
                call readu(w)
                select case (trim(w))
                case ('DIVIDE', 'SPLIT')
-                 continue
+                 job%IOextF_divide = .true.
+                 job%IOfitpot_divide = .true.
+               case ('STREAM')
+                 job%IOextF_stream = .true.
                case default
                  call report ("Unrecognized unit name (<>DIVIDE) "//trim(w),.true.)
                end select
-               !
-               job%IOextF_divide = .true.
-               job%IOfitpot_divide = .true.
                !
                if (Nitems>3) then
                   call readi(fitting%iparam(1))
@@ -5219,9 +5224,13 @@ module fields
                !
                write(my_fmt,'(a,i0,a)') "(a,",Ncoords,"i1)"
                !
-               write(extF%name(iterm,imu),my_fmt) 'f',(mod(extF%term(i,iterm,imu),10),i=1,trove%Ncoords)
+               if (len_trim(w) > 1) then
+                   extF%name(iterm,imu) = trim(w)
+                else
+                   write(extF%name(iterm,imu),my_fmt) 'f',(abs(mod(extF%term(i,iterm,imu),10)),i=1,trove%Ncoords)
+                endif
                !
-               if (any(extF%term(:,iterm,imu)<0)) then 
+               if (any(extF%term(:,iterm,imu)<-2)) then 
                    write(out,"('FLinput: negative extF powers on row',i8)") iparam
                    stop 'FLinput: wrong extF indexes '
                endif 
@@ -23266,11 +23275,16 @@ end subroutine check_read_save_none
                   ! External field part
                   !
                   if (abs(krot1-krot2)>2) cycle
+                  if ((trim(extF%ftype)=='POTENTIAL'.or.trim(extF%ftype)=='POTEN').and.krot1/=krot2) cycle
                   !
                   do imu = 1,extF%rank
                     !
-                    !if (imu==3.and.krot1/=krot2) cycle
-                    !if (imu/=3.and.krot1==krot2) cycle
+                    if (extF%rank==3 .and. trim(extF%ftype)/='POTENTIAL' .and. trim(extF%ftype)/='POTEN' .and. &
+                        trim(extF%ftype)/='XY2_G-COR-ELEC' .and. trim(extF%ftype)/='XY2_G-TENS-RANK3') then
+                      if (abs(krot1-krot2)>1) cycle
+                      if (imu==3.and.krot1/=krot2) cycle
+                      if (imu/=3.and.krot1==krot2) cycle
+                    endif
                     !
                     Tcoeff = trove%extF(imu)%Ncoeff
                     !
@@ -23654,11 +23668,16 @@ end subroutine check_read_save_none
                   ! External field part
                   !
                   if (abs(krot1-krot2)>2) cycle
+                  if ((trim(extF%ftype)=='POTENTIAL'.or.trim(extF%ftype)=='POTEN').and.krot1/=krot2) cycle
                   !
                   do imu = 1,extF%rank
                     !
-                    !if (imu==3.and.krot1/=krot2) cycle
-                    !if (imu/=3.and.krot1==krot2) cycle
+                    if (extF%rank==3 .and. trim(extF%ftype)/='POTENTIAL' .and. trim(extF%ftype)/='POTEN' .and. &
+                        trim(extF%ftype)/='XY2_G-COR-ELEC' .and. trim(extF%ftype)/='XY2_G-TENS-RANK3') then
+                      if (abs(krot1-krot2)>1) cycle
+                      if (imu==3.and.krot1/=krot2) cycle
+                      if (imu/=3.and.krot1==krot2) cycle
+                    endif
                     !
                     Tcoeff = trove%extF(imu)%Ncoeff
                     !
