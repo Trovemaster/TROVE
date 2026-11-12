@@ -43,7 +43,7 @@ This directory contains the regression test suite for [TROVE](https://github.com
    ./run_regression_tests.sh
    ```
    This script automatically:
-   - Downloads and extracts `benchmarks.tar.gz` from Zenodo (`10.5281/zenodo.4546263`) if `benchmarks/H2CO` is not yet present.
+   - Uses the H2CO inputs and the 40 reference files compared by `scripts/H2CO/compare_results.sh`, which are tracked in `benchmarks/H2CO/` (2.5 MB). The full 71 MB archive on Zenodo (`10.5281/zenodo.4546263`) is downloaded only if `benchmarks/H2CO` is missing; Zenodo may block automated downloads (HTTP 403) from CI runners.
    - Copies `j-trove.x`, `benchmarks/H2CO/input/*.inp`, and `scripts/H2CO/run_benchmark.sh` into `outputs/H2CO/`.
    - Executes all 13 steps in sequence via `run_benchmark.sh`.
    - Compares the resulting energies and expansion coefficients against `benchmarks/H2CO/outputs/` using `compare_results.py` and prints `PASS: H2CO`.
