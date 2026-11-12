@@ -4275,6 +4275,7 @@ contains
      real(rk)          :: f_t,dtemp0
      integer(ik)       :: strm_u, strm_wait
      logical           :: strm_ready
+     integer           :: ios_t
      character(len=256) :: strm_fname, strm_done, strm_istr
      character(len=cl) :: unitfname,job_file
      !
@@ -4595,7 +4596,20 @@ contains
                flush(out)
              endif
            else
-             read(chkptIO) imu_t
+             !
+             ! The file can hold slices of parameters that are not fitted in this run (written by an older
+             ! TROVE with all parameters, or with a larger ifit set): skip them. Stop if slice i is missing.
+             !
+             read(chkptIO,iostat=ios_t) imu_t
+             do while (ios_t==0.and.imu_t>=1.and.imu_t<i)
+               read(chkptIO,iostat=ios_t)
+               if (ios_t==0) read(chkptIO,iostat=ios_t) imu_t
+             enddo
+             if (ios_t/=0.or.imu_t/=i) then
+               write(out,"(' prepare_pot_matrix: slice of parameter ',i0,' not found in ',a)") i,trim(job_file)
+               write(out,"(' the file was written for a different set of fitted parameters (ifit); redo EXTMATELEM SAVE')")
+               stop 'prepare_pot_matrix - parameter slice missing in the external field file'
+             endif
              read(chkptIO) poten_
            endif
            if (i<fitting%iparam(1)) cycle
@@ -4877,9 +4891,18 @@ contains
               !
               if (.not.job%IOextF_divide) then 
                 !
-                read(chkptIO) imu_t
+                ! skip slices of parameters that are not fitted in this run; stop if slice i is missing
                 !
-                !if (imu_t>fitting%iparam(2)) exit
+                read(chkptIO,iostat=ios_t) imu_t
+                do while (ios_t==0.and.imu_t>=1.and.imu_t<i)
+                  read(chkptIO,iostat=ios_t)
+                  if (ios_t==0) read(chkptIO,iostat=ios_t) imu_t
+                enddo
+                if (ios_t/=0.or.imu_t/=i) then
+                  write(out,"(' prepare_pot_matrix: slice of parameter ',i0,' not found in ',a)") i,trim(job_file)
+                  write(out,"(' the file was written for a different set of fitted parameters (ifit); redo EXTMATELEM SAVE')")
+                  stop 'prepare_pot_matrix - parameter slice missing in the external field file'
+                endif
                 !
                 read(chkptIO) poten_
                 !

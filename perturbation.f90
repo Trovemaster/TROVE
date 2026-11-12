@@ -9947,15 +9947,28 @@ module perturbation
      vrange(1) = -0.0_rk ; vrange(2) = job%upper_ener+job%partfunc%ZPE
      irange(1) = 1 ; irange(2) = min(job%nroots(gamma),dimen_s)
      !
+     ! Range of roots to compute:
+     !   'A' (default): all roots; UPLIMIT (ENERMAX) then only limits the roots that are stored;
+     !   'I'          : NROOTS < dimension: roots 1..NROOTS;
+     !   'V'          : only with the DIAGONALIZER key WINDOW (SYEVR): roots with E <= UPLIMIT+ZPE.
+     ! 1e9 is the UPLIMIT default (uv_syevr_ in fields.f90).
+     !
+     rng = 'A'
+     !
      if (irange(2)<dimen_s) then
         !
         rng = 'I'
         !
-     elseif (job%upper_ener<=1e9) then 
+     elseif (job%diag_window.and.job%upper_ener<1e9.and.trim(job%diagonalizer)=='SYEVR') then 
         !
         rng = 'V'
         !
-        !   find the smallest absolute diagonal value of mat
+        ! no lower limit, so that negative eigenvalues are not lost
+        !
+        vrange(1) = -safe_max
+        !
+        ! if the ZPE is not known yet, use the smallest diagonal element of mat instead
+        ! (the lowest eigenvalue never exceeds it)
         !
         if (job%partfunc%ZPE<sqrt(small_)) then 
           !
@@ -9967,10 +9980,10 @@ module perturbation
                 !
                 jroot = iroot-bterm(iroot,1)+1
                 !
-                mat0 = abs(mat(iroot,jroot))
+                mat0 = mat(iroot,jroot)
                 !
              else
-                mat0 = abs(mat(iroot,iroot))
+                mat0 = mat(iroot,iroot)
              endif 
              !
              if (mat0<=MaxEigenvects) then 
@@ -9982,8 +9995,7 @@ module perturbation
           vrange(2) = job%upper_ener+MaxEigenvects
           !
         endif 
-     else
-        rng = 'A'
+        !
      endif 
      !
      ! Read/write from/to the disk a precomputed Hamiltonian matrix matrix
@@ -10967,6 +10979,24 @@ module perturbation
        endif
        !
      end select
+     !
+     if (rng=='V') then
+       !
+       if (job%verbose>=2) write(out,"(/'SYEVR WINDOW: ',i0,' of ',i0,' roots with E <= ',f18.6,' (J = ',i0,', gamma = ',i0,')')") &
+                                 nroots,dimen_s,vrange(2),jrot,gamma
+       !
+       if (nroots<1) then
+         !
+         if (jrot==0.and.gamma==1) then
+           write(out,"('diagonalization_contract: no roots in the SYEVR WINDOW for J = 0, gamma = 1; check UPLIMIT and ZPE')")
+           stop 'diagonalization_contract: empty SYEVR WINDOW for J = 0, gamma = 1'
+         endif
+         !
+         write(out,"('diagonalization_contract: warning: no roots below UPLIMIT for J = ',i0,', gamma = ',i0)") jrot,gamma
+         !
+       endif
+       !
+     endif
      !
      if (job%verbose>=4) call TimerStop('Full diagonalization') 
      !

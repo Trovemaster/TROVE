@@ -331,6 +331,7 @@ module fields
       real(rk)            :: cluster = -1     ! the factor to porepare clustering of the basis set
       integer(ik)         :: swap_after       ! The Hamiltonian will be stoted, read, and transformed vector by vector
       real(rk)            :: upper_ener       ! upper energy limit for the eigenvalues to be found in variational diagonalization with syevr
+      logical             :: diag_window = .false. ! DIAGONALIZER key WINDOW: SYEVR computes only the roots below UPLIMIT (LAPACK RANGE='V')
       real(rk)            :: thresh           ! thresh of general use
       real(rk)            :: max_swap_size              ! maximal allowed disk space 
       character(len=cl)   :: IOeigen_action = 'NONE'   ! we can either SAVE or READ the eigenfunctions from an external file
@@ -1607,6 +1608,13 @@ module fields
              !
              call readf(job%upper_ener)
              !
+           case("WINDOW")
+             !
+             ! opt-in: SYEVR computes only the roots below UPLIMIT (LAPACK RANGE='V').
+             ! Without WINDOW all roots are computed (RANGE='A') and UPLIMIT only limits the roots stored.
+             !
+             job%diag_window = .true.
+             !
            case("THRESHOLD","THRESH")
              !
              call readf(job%thresh)
@@ -1668,6 +1676,21 @@ module fields
              write (out,"('         the program will disregard uplimit and be based on nroots')")
              job%upper_ener = uv_syevr_
              !
+         endif
+         !
+         if (job%diag_window) then
+            !
+            if (any(job%nroots/=nroots_)) then
+              write (out,"('FLinput: WINDOW in DIAGONALIZER is ignored because NROOTS is given')")
+              job%diag_window = .false.
+            elseif (job%upper_ener>=uv_syevr_) then
+              write (out,"('FLinput: WINDOW in DIAGONALIZER requires UPLIMIT (ENERMAX)')")
+              stop 'FLinput - WINDOW without UPLIMIT'
+            elseif (trim(job%diagonalizer)/='SYEVR') then
+              write (out,"('FLinput: WINDOW in DIAGONALIZER is only supported with SYEVR, not ',a)") trim(job%diagonalizer)
+              stop 'FLinput - WINDOW requires SYEVR'
+            endif
+            !
          endif
          !
        case ("DSTEP")
