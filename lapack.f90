@@ -738,8 +738,6 @@ module lapack
     call ssyevr(jobz_,rng_,'L',nh1,h(1:nh1,1:nh2),nh1,vl,vu,il,ir,abstol,n,e(1:nh1),a(1:nh1,1:msize),&
                 nh1,isuppz,twork(1:nwork),nwork,tiwork(1:niwork),niwork,info)
     !
-    if (verbose>=3) call TimerStop('lapack_ssyevr: diagonalization finished')
-    !
     !$omp parallel do private(k) shared(h) schedule(dynamic)
     do k=1,min(msize,max(1,n))
        h(:,k) = a(:,k)
