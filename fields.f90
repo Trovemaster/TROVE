@@ -48,6 +48,7 @@ module fields
           FLDVR_gmat_dvr,FLfromcartesian2local,FLcoeffprunT,coeffprun
    
    public choose, sum_choose, powers_from_index
+   public FLextF_stream_start,FLextF_stream_send,FLextF_stream_attach,FLextF_stream_receive,FLextF_stream_finish
    !
    !FLfrom_local2chi_by_fit
    !
@@ -354,6 +355,9 @@ module fields
       logical             :: IOExtF_divide = .false.      ! divide the ExtF checkpoint into pieces 
       logical             :: IOextF_stitch = .false.      ! stitch the ExF part during the J=0 conversion
       logical             :: IOextF_stream = .false.      ! stream ExtF slices through temporary files
+      character(len=cl)   :: extF_stream_dir = ''         ! STREAM <dir>: directory of the slices (default: next to extFmat_file)
+      integer(ik)         :: extF_stream_timeout = 21600  ! STREAM ... TIMEOUT <seconds>: longest wait without progress
+      integer(hik)        :: extF_stream_session = 0      ! id of the producer run, written in the session file and every slice
       logical             :: IOfitpot_divide = .false.    ! divide the ExtF checkpoint into pieces 
       character(len=cl)   :: compress_file  = 'compress'  ! the file name for storing the compressed eigenvectors will start with this character
       logical             :: matelem_append               ! append the matrix elements after the record (basis function) 
@@ -626,6 +630,9 @@ module fields
 
    real(ark) :: fd_step_Bmat=1e-4  ! finite difference parameter used for Bmat differentiation numerically 
    real(rk)  :: symm_toler_defaul = 1e-8  ! defaul value for symm_toler 
+   !
+   integer(ik),save :: stream_nsent = 0        ! STREAM producer: number of slices sent
+   integer(ik),save :: stream_prev(3) = 0      ! STREAM producer: parameters of the last three slices sent
 
   contains
 
@@ -3269,6 +3276,10 @@ module fields
                  !
                  job%IOextF_stream = .true.
                  !
+                 ! optional: [<dir>] [TIMEOUT <seconds>]
+                 !
+                 call FLread_stream_options
+                 !
                case ('DIVIDE', 'SPLIT')
                  !
                  job%IOextF_divide = .true.
@@ -3340,16 +3351,17 @@ module fields
                case ('DIVIDE', 'SPLIT')
                  job%IOextF_divide = .true.
                  job%IOfitpot_divide = .true.
+                 if (Nitems>3) then
+                    call readi(fitting%iparam(1))
+                    call readi(fitting%iparam(2))
+                 endif
                case ('STREAM')
                  job%IOextF_stream = .true.
+                 ! optional: [<dir>] [TIMEOUT <seconds>]
+                 call FLread_stream_options
                case default
                  call report ("Unrecognized unit name (<>DIVIDE) "//trim(w),.true.)
                end select
-               !
-               if (Nitems>3) then
-                  call readi(fitting%iparam(1))
-                  call readi(fitting%iparam(2))
-               endif
                !
              endif
              !
@@ -5462,6 +5474,32 @@ module fields
         !
       endif 
       !
+   endif
+   !
+   ! STREAM (EXTMATELEM SAVE STREAM / FIT_POTEN SAVE STREAM) works only where it is implemented:
+   ! the default FBR contracted matrix elements (producer) and METHOD FAST (consumer), contracted basis
+   !
+   if (job%IOextF_stream) then
+     if (job%IOextF_divide) then
+       write (out,"('FLinput: STREAM cannot be combined with DIVIDE/SPLIT')")
+       stop 'FLinput - STREAM with DIVIDE'
+     endif
+     if (job%vib_contract) then
+       write (out,"('FLinput: STREAM is not available in the J=0 representation (MODEL J=0, CONVERT, J0_* checkpoints)')")
+       stop 'FLinput - STREAM in the J=0 representation'
+     endif
+     if (trim(job%IOextF_action)=='SAVE'.and.job%contrci_me_fast) then
+       write (out,"('FLinput: EXTMATELEM SAVE STREAM is not implemented for CONTRACTION FAST_CI')")
+       stop 'FLinput - STREAM with FAST_CI'
+     endif
+     if (trim(job%IOextF_action)=='SAVE'.and..not.trove%FBR) then
+       write (out,"('FLinput: EXTMATELEM SAVE STREAM is not implemented for DVR')")
+       stop 'FLinput - STREAM with DVR'
+     endif
+     if (trim(job%IOfitpot_action)=='SAVE'.and.trim(fitting%method)/='FAST') then
+       write (out,"('FLinput: FIT_POTEN SAVE STREAM requires METHOD FAST in FITTING')")
+       stop 'FLinput - STREAM requires METHOD FAST'
+     endif
    endif
    !
    if ( job%convert_model_j0.and.job%bset(0)%range(1)>0 ) then
@@ -30889,6 +30927,300 @@ end subroutine check_read_save_none
    enddo 
    !
   end subroutine find_igamma_pair  
+  !
+  !
+  ! STREAM mode for the external-field (potential-derivative) slices.
+  ! EXTMATELEM SAVE STREAM (producer) and FIT_POTEN SAVE STREAM (consumer) run at the same time
+  ! and exchange one slice per fitted parameter through files named after EXTFMAT_FILE:
+  !   <base>.stream_session  written by the producer: session id, basis size, number of slices
+  !   <base>.slice_<k>       slice of parameter k: header (tag, session id, k, basis size) + matrix
+  !   <base>.slice_<k>.done  written after the slice is closed; deleted by the consumer
+  ! <base> is EXTFMAT_FILE (default contr_extfield.chk, i.e. in the run directory), or
+  ! <dir>/<name of EXTFMAT_FILE> with the optional STREAM <dir> (both runs need the same <dir>).
+  ! At most three unconsumed slices exist at any time, and every wait stops after
+  ! job%extF_stream_timeout seconds without progress (STREAM ... TIMEOUT <seconds>).
+  !
+  subroutine FLread_stream_options
+    !
+    use input, only : item, nitems, reada, readi, upcase, report
+    !
+    character(len=cl) :: w_,wu_
+    !
+    do while (item<nitems)
+      !
+      call reada(w_)
+      wu_ = w_
+      call upcase(wu_)
+      !
+      select case (trim(wu_))
+      case ('TIMEOUT')
+        call readi(job%extF_stream_timeout)
+        if (job%extF_stream_timeout<1) call report ("STREAM TIMEOUT must be a positive number of seconds",.true.)
+      case ('DUMP')
+        job%IOextmatelem_dump = .true.
+      case default
+        if (verify(trim(w_),'0123456789')==0) &
+           call report ("STREAM takes [<dir>] [TIMEOUT <seconds>], not a parameter range: "//trim(w_),.true.)
+        job%extF_stream_dir = trim(w_)
+      end select
+      !
+    enddo
+    !
+  end subroutine FLread_stream_options
+  !
+  function FLextF_stream_file(imu,ext) result(fname)
+    !
+    integer(ik),intent(in)      :: imu   ! parameter index; imu<1 gives the session file
+    character(len=*),intent(in) :: ext   ! '' for the slice, '.done' for its marker
+    character(len=cl)           :: fname,base
+    character(len=32)           :: istr
+    integer                     :: islash
+    !
+    if (len_trim(job%extF_stream_dir)>0) then
+      islash = index(job%extFmat_file,'/',back=.true.)
+      base = trim(job%extF_stream_dir)//'/'//trim(job%extFmat_file(islash+1:))
+    else
+      base = trim(job%extFmat_file)
+    endif
+    !
+    if (imu<1) then
+      fname = trim(base)//'.stream_session'
+    else
+      write(istr,'(i0)') imu
+      fname = trim(base)//'.slice_'//trim(istr)//trim(ext)
+    endif
+    !
+  end function FLextF_stream_file
+  !
+  subroutine FLextF_stream_nap
+    !
+    use iso_c_binding, only : c_int
+    !
+    interface
+      function c_usleep(usec) bind(C,name='usleep') result(ierr)
+        import :: c_int
+        integer(c_int),value :: usec
+        integer(c_int)       :: ierr
+      end function c_usleep
+    end interface
+    !
+    integer(c_int) :: ierr
+    !
+    ierr = c_usleep(500000_c_int)
+    !
+  end subroutine FLextF_stream_nap
+  !
+  ! wait until fname exists (want_exist) or has disappeared (.not.want_exist)
+  !
+  subroutine FLextF_stream_wait(fname,want_exist,peer)
+    !
+    character(len=*),intent(in) :: fname,peer
+    logical,intent(in)          :: want_exist
+    logical                     :: ex
+    integer(hik)                :: nhalf
+    !
+    nhalf = 0
+    do
+      inquire(file=trim(fname),exist=ex)
+      if (ex.eqv.want_exist) return
+      call FLextF_stream_nap
+      nhalf = nhalf + 1
+      if (mod(nhalf,240_hik)==0.and.job%verbose>=3) then
+        write(out,"(' STREAM: waiting for the ',a,' for ',i0,' s (',a,')')") trim(peer),nhalf/2,trim(fname)
+        flush(out)
+      endif
+      if (nhalf>=2_hik*job%extF_stream_timeout) then
+        write(out,"(/' STREAM: no progress from the ',a,' for ',i0,' s (',a,')')") trim(peer),job%extF_stream_timeout,trim(fname)
+        write(out,"(' The limit can be changed with STREAM [<dir>] TIMEOUT <seconds>')")
+        stop 'STREAM: timeout'
+      endif
+    enddo
+    !
+  end subroutine FLextF_stream_wait
+  !
+  ! producer: refuse files of an earlier run, create a session id and write the session file
+  !
+  subroutine FLextF_stream_start(mdimen,nslices,first_imu)
+    !
+    integer(ik),intent(in) :: mdimen,nslices,first_imu
+    character(len=cl)      :: fname,sname
+    logical                :: ex1,ex2,ex3
+    integer                :: u,v(8),cstat,estat
+    integer(hik)           :: c
+    !
+    if (len_trim(job%extF_stream_dir)>0) then
+      call execute_command_line('mkdir -p "'//trim(job%extF_stream_dir)//'"',exitstat=estat,cmdstat=cstat)
+      if (cstat/=0.or.estat/=0) then
+        write(out,"(/' STREAM: cannot create the directory ',a)") trim(job%extF_stream_dir)
+        stop 'STREAM: cannot create the directory'
+      endif
+    endif
+    !
+    sname = FLextF_stream_file(0_ik,'')
+    fname = FLextF_stream_file(first_imu,'')
+    inquire(file=trim(sname),exist=ex1)
+    inquire(file=trim(fname),exist=ex2)
+    inquire(file=trim(fname)//'.done',exist=ex3)
+    if (ex1.or.ex2.or.ex3) then
+      write(out,"(/' STREAM: files of an earlier STREAM run were found (',a,' or ',a,')')") trim(sname),trim(fname)
+      write(out,"(' Remove the old *.stream_session and *.slice_* files before starting a new producer')")
+      stop 'STREAM: stale files'
+    endif
+    !
+    call date_and_time(values=v)
+    call system_clock(count=c)
+    job%extF_stream_session = 1000003_hik*( (int(v(3),hik)*24_hik+int(v(5),hik))*3600000_hik+int(v(6),hik)*60000_hik &
+                                            +int(v(7),hik)*1000_hik+int(v(8),hik) ) + mod(abs(c),1000003_hik)
+    stream_nsent = 0
+    stream_prev  = 0
+    !
+    open(newunit=u,file=trim(sname),form='formatted',action='write',status='new')
+    write(u,"(a)")  'TROVE-EXTF-STREAM 1'
+    write(u,"(i0)") job%extF_stream_session
+    write(u,"(i0)") mdimen
+    write(u,"(i0)") nslices
+    write(u,"(a)")  'END'
+    close(u)
+    !
+    if (job%verbose>=2) write(out,"(/' STREAM: session ',i0,': ',i0,' slices of size ',i0,'; session file ',a)") &
+                              job%extF_stream_session,nslices,mdimen,trim(sname)
+    !
+  end subroutine FLextF_stream_start
+  !
+  ! producer: write the slice of parameter imu (at most three unconsumed slices at any time)
+  !
+  subroutine FLextF_stream_send(imu,mdimen,mat)
+    !
+    integer(ik),intent(in) :: imu,mdimen
+    real(rk),intent(in)    :: mat(:,:)
+    character(len=16)      :: tag
+    integer                :: u
+    !
+    if (size(mat,1)/=mdimen.or.size(mat,2)/=mdimen) stop 'FLextF_stream_send: wrong slice size'
+    !
+    if (stream_nsent>=3) &
+      call FLextF_stream_wait(FLextF_stream_file(stream_prev(mod(stream_nsent,3_ik)+1),'.done'),.false.,'consumer')
+    !
+    tag = 'TROVE-EXTF-SLICE'
+    open(newunit=u,file=trim(FLextF_stream_file(imu,'')),form='unformatted',action='write',position='rewind',status='replace')
+    write(u) tag,job%extF_stream_session,imu,mdimen
+    write(u) mat
+    close(u)
+    !
+    open(newunit=u,file=trim(FLextF_stream_file(imu,'.done')),form='formatted',action='write',status='replace')
+    write(u,"(i0)") imu
+    close(u)
+    !
+    stream_nsent = stream_nsent + 1
+    stream_prev(mod(stream_nsent-1_ik,3_ik)+1) = imu
+    !
+  end subroutine FLextF_stream_send
+  !
+  ! consumer: wait for the producer's session file and check basis size and number of slices
+  !
+  subroutine FLextF_stream_attach(ncontr,nslices)
+    !
+    integer(ik),intent(in) :: ncontr,nslices
+    character(len=cl)      :: sname,line,last
+    integer                :: u,ios
+    integer(hik)           :: sid,nhalf
+    integer(ik)            :: mdim_t,nsl_t
+    !
+    sname = FLextF_stream_file(0_ik,'')
+    nhalf = 0
+    !
+    do
+      call FLextF_stream_wait(sname,.true.,'producer')
+      last = ''
+      open(newunit=u,file=trim(sname),form='formatted',action='read',status='old',iostat=ios)
+      if (ios==0) then
+        read(u,"(a)",iostat=ios) line
+        if (ios==0) read(u,*,iostat=ios) sid
+        if (ios==0) read(u,*,iostat=ios) mdim_t
+        if (ios==0) read(u,*,iostat=ios) nsl_t
+        if (ios==0) read(u,"(a)",iostat=ios) last
+        close(u)
+      endif
+      if (ios==0.and.trim(last)=='END') exit
+      !
+      ! the producer is still writing the session file
+      !
+      call FLextF_stream_nap
+      nhalf = nhalf + 1
+      if (nhalf>=2_hik*job%extF_stream_timeout) then
+        write(out,"(/' STREAM: incomplete session file ',a)") trim(sname)
+        stop 'STREAM: bad session file'
+      endif
+    enddo
+    !
+    if (line(1:17)/='TROVE-EXTF-STREAM') then
+      write(out,"(/' STREAM: ',a,' is not a TROVE STREAM session file')") trim(sname)
+      stop 'STREAM: bad session file'
+    endif
+    !
+    if (mdim_t/=ncontr) then
+      write(out,"(/' STREAM: the producer sends slices of size ',i0,', this run expects ',i0)") mdim_t,ncontr
+      write(out,"(' Producer and consumer must use the same basis set and contraction')")
+      stop 'STREAM: basis size mismatch'
+    endif
+    !
+    if (nsl_t/=nslices) then
+      write(out,"(/' STREAM: the producer sends ',i0,' slices, this run expects ',i0)") nsl_t,nslices
+      write(out,"(' Producer and consumer must fit the same parameters (same fit flags)')")
+      stop 'STREAM: different sets of fitted parameters'
+    endif
+    !
+    job%extF_stream_session = sid
+    !
+    if (job%verbose>=2) write(out,"(/' STREAM: attached to session ',i0,': ',i0,' slices of size ',i0,' (',a,')')") &
+                              sid,nsl_t,mdim_t,trim(sname)
+    !
+  end subroutine FLextF_stream_attach
+  !
+  ! consumer: read and delete the slice of parameter imu
+  !
+  subroutine FLextF_stream_receive(imu,ncontr,mat)
+    !
+    integer(ik),intent(in) :: imu,ncontr
+    real(rk),intent(out)   :: mat(:,:)
+    character(len=16)      :: tag
+    integer(hik)           :: sid
+    integer(ik)            :: imu_t,mdim_t
+    integer                :: u,ios
+    !
+    call FLextF_stream_wait(FLextF_stream_file(imu,'.done'),.true.,'producer')
+    !
+    open(newunit=u,file=trim(FLextF_stream_file(imu,'')),form='unformatted',action='read',position='rewind',status='old')
+    read(u,iostat=ios) tag,sid,imu_t,mdim_t
+    if (ios/=0) then
+      tag = '' ; sid = -1 ; imu_t = -1 ; mdim_t = -1
+    endif
+    if (tag/='TROVE-EXTF-SLICE'.or.sid/=job%extF_stream_session.or.imu_t/=imu.or.mdim_t/=ncontr) then
+      write(out,"(/' STREAM: ',a,' does not belong to this session')") trim(FLextF_stream_file(imu,''))
+      write(out,"(' expected session ',i0,', parameter ',i0,', size ',i0,'; found session ',i0,', parameter ',i0,', size ',i0)") &
+            job%extF_stream_session,imu,ncontr,sid,imu_t,mdim_t
+      stop 'STREAM: foreign slice'
+    endif
+    read(u) mat
+    close(u,status='delete')
+    !
+    open(newunit=u,file=trim(FLextF_stream_file(imu,'.done')),form='formatted',action='read',status='old')
+    close(u,status='delete')
+    !
+  end subroutine FLextF_stream_receive
+  !
+  ! consumer: all slices received; remove the session file
+  !
+  subroutine FLextF_stream_finish
+    !
+    integer :: u,ios
+    !
+    open(newunit=u,file=trim(FLextF_stream_file(0_ik,'')),form='formatted',action='read',status='old',iostat=ios)
+    if (ios==0) close(u,status='delete')
+    !
+    if (job%verbose>=2) write(out,"(' STREAM: all slices of session ',i0,' received')") job%extF_stream_session
+    !
+  end subroutine FLextF_stream_finish
   !
 end module fields
 

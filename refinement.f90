@@ -2,7 +2,8 @@ module refinement
 
  use accuracy,     only : ik, hik, rk, ark, cl, wl, out, small_
  use fields,       only : job,fitting,j0fit,FLNmodes,FLindexQ,FLQindex,FL_fdf,FLpoten4xi,&
-                          FLfinitediffs_2d,FLpoten_linearized,analysis,action
+                          FLfinitediffs_2d,FLpoten_linearized,analysis,action,&
+                          FLextF_stream_attach,FLextF_stream_receive,FLextF_stream_finish
  use timer,        only : IOstart,Arraystart,Arraystop,Arrayminus,Timerstart,Timerstop,MemoryReport,TimerReport
  use molecules,    only : MLcoord_direct,MLinvmat,MLinvmatark,MLcoordinate_transform_func,MLpotentialfunc
  use moltype,      only : manifold,molec, extF,ML_check_steps,MLdiag_ulen,MLlinur,MLfromlocal2cartesian
@@ -4273,10 +4274,8 @@ contains
      !
      integer(ik)       :: jind,Jrot,isym,Nentries,ientry,ilevel,alloc,rec_len,i,parmax,iunit,junit,i1,i2
      real(rk)          :: f_t,dtemp0
-     integer(ik)       :: strm_u, strm_wait
-     logical           :: strm_ready
+     integer(ik)       :: nstream
      integer           :: ios_t
-     character(len=256) :: strm_fname, strm_done, strm_istr
      character(len=cl) :: unitfname,job_file
      !
      integer(ik)        :: chkptIO
@@ -4348,7 +4347,11 @@ contains
      if (do_calc) then 
        !
        if (job%verbose>=4) then 
-          write(out, '(/a, 1x, a)') 'Reading vibrational contracted matrix elements from file', trim(job%extFmat_file)
+          if (job%IOextF_stream) then
+            write(out, '(/a)') 'Receiving vibrational contracted matrix elements from the STREAM producer'
+          else
+            write(out, '(/a, 1x, a)') 'Reading vibrational contracted matrix elements from file', trim(job%extFmat_file)
+          endif
           write(out, '(a)') 'and converting them to the representaion of the eigenfunctions ... '
        end if
        !
@@ -4560,37 +4563,25 @@ contains
              write(iunit) 'start potfit'
            enddo
          enddo
-         if (.not. job%IOextF_stream) then
+         if (job%IOextF_stream) then
+           !
+           ! STREAM: the producer (EXTMATELEM SAVE STREAM) sends one slice per fitted parameter
+           !
+           nstream = 0
+           do i = 1, fitting%iparam(2)
+             if (trim(extF%ftype)=='POTENTIAL'.and.extF%ifit(1,i)<1) cycle
+             nstream = nstream + 1
+           enddo
+           call FLextF_stream_attach(ncontr_t,nstream)
+           !
+         else
            read(chkptIO) buf20
            read(chkptIO) ncontr_t
          endif
          do i = 1, fitting%iparam(2)
            if (trim(extF%ftype)=='POTENTIAL'.and.extF%ifit(1,i)<1) cycle
            if (job%IOextF_stream) then
-             write(strm_istr, '(i0)') i
-             strm_fname = '/tmp/hcn_ext_stream/extmat_' // trim(adjustl(strm_istr)) // '.chk'
-             strm_done  = trim(strm_fname) // '.done'
-             strm_wait  = 0
-             do
-               inquire(file=trim(strm_done), exist=strm_ready)
-               if (strm_ready) exit
-               call sleep(1)
-               strm_wait = strm_wait + 1
-               if (mod(strm_wait, 60) == 0 .and. job%verbose>=3) then
-                 write(out,"(' STREAM waiting for producer slice ',a)") trim(strm_done)
-                 flush(out)
-               endif
-             enddo
-             open(newunit=strm_u, form='unformatted', action='read', position='rewind', status='old', file=trim(strm_fname))
-             read(strm_u) imu_t
-             if (imu_t /= i) then
-               write(out,"(' prepare_pot_matrix STREAM mismatch: expected ',i0,' got ',i0)") i, imu_t
-               stop 'prepare_pot_matrix - stream index mismatch'
-             endif
-             read(strm_u) poten_
-             close(strm_u, status='delete')
-             open(newunit=strm_u, form='formatted', action='read', status='old', file=trim(strm_done))
-             close(strm_u, status='delete')
+             call FLextF_stream_receive(i,ncontr_t,poten_)
              if (job%verbose>=4) then
                write(out,"(' STREAM consumed fitpot slice i = ',i0)") i
                flush(out)
@@ -4669,6 +4660,8 @@ contains
              write (out,"(' prepare_pot_matrix ',a,' has bogus footer: ',a)") job%kinetmat_file,buf20(1:17)
              stop 'prepare_pot_matrix - bogus file format'
            end if
+         else
+           call FLextF_stream_finish
          endif
          do jind = 1, nJ
            if (jind==1.and.fitting%J_list(1)/=0) cycle
