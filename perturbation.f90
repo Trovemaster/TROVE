@@ -42504,12 +42504,39 @@ subroutine PTstore_contr_matelem(jrot)
   !
   target_index = 0 
   target_index(1) = max(potorder,kinorder,extForder)
-  maxnterms = FLQindex(trove%Nmodes_e,target_index)
+  maxnterms = 1 + sum(trove%g_vib(1:nmodes,1:nmodes)%Ncoeff) + &
+                  sum(trove%g_cor(1:nmodes,1:3)%Ncoeff) + &
+                  sum(trove%g_rot(1:3,1:3)%Ncoeff) + &
+                  trove%poten%Ncoeff + trove%pseudo%Ncoeff
+  if (associated(trove%extf)) maxnterms = maxnterms + sum(trove%extf(:)%Ncoeff)
   !
-  allocate(terms(size(FLIndexQ,dim=1),size(FLIndexQ,dim=2)), stat=info)
+  allocate(terms(Nmodes,maxnterms), stat=info)
   call ArrayStart('PTstore_contr_matelem:terms',info,size(terms),kind(terms))
-  !terms = FLindexQ
-  maxnterms = FLQindex(trove%Nmodes_e,target_index,terms)
+  terms = 0
+  nterms = 1
+  do imode=1, nmodes
+    do jmode=1, nmodes
+      call add_field_unique_terms(trove%g_vib(jmode,imode), nmodes, nterms, terms)
+    enddo
+  enddo
+  do imode=1, 3
+    do jmode=1, nmodes
+      call add_field_unique_terms(trove%g_cor(jmode,imode), nmodes, nterms, terms)
+    enddo
+  enddo
+  do imode=1, 3
+    do jmode=1, 3
+      call add_field_unique_terms(trove%g_rot(jmode,imode), nmodes, nterms, terms)
+    enddo
+  enddo
+  call add_field_unique_terms(trove%poten, nmodes, nterms, terms)
+  call add_field_unique_terms(trove%pseudo, nmodes, nterms, terms)
+  if (associated(trove%extf)) then
+    do ipar=1, extF_rank
+      call add_field_unique_terms(trove%extf(ipar), nmodes, nterms, terms)
+    enddo
+  endif
+  maxnterms = nterms
   !
   ! indexes of the first and the last mode in each class
   !
@@ -42524,31 +42551,6 @@ subroutine PTstore_contr_matelem(jrot)
                      ':', iclass_imode(2,iclass), ']'
       enddo
   endif
-  !
-  allocate(IndexQ(Nmodes,maxnterms), stat=info)
-  call ArrayStart('PTstore_contr_matelem:IndexQ',info,size(IndexQ),kind(IndexQ))
-  IndexQ = terms
-  !
-  ! exclude last class form IndexQ0
-  imode1 = PT%mode_class(nclasses,1)
-  nterms0 = FLQindex(imode1-1,target_index)
-  allocate(IndexQ0(Nmodes,nterms0), stat=info)
-  call ArrayStart('PTstore_contr_matelem:IndexQ0',info,size(IndexQ0),kind(IndexQ0))
-  nterms0 = FLQindex(imode1-1,target_index,IndexQ0)
-  !
-  ! estimate max number of expansion terms among all operators
-  !
-  !maxnterms = max( maxval(trove%g_rot(:,:)%Ncoeff), &
-  !                 maxval(trove%g_cor(:,:)%Ncoeff), &
-  !                 maxval(trove%g_vib(:,:)%Ncoeff), &
-  !                 trove%pseudo%Ncoeff, &
-  !                 trove%poten%Ncoeff)
-  !
-  target_index = 0 
-  target_index(1) = max(potorder,kinorder,extForder)
-  maxnterms = FLQindex(trove%Nmodes_e,target_index)
-  !
-  if (associated(trove%extf)) maxnterms = max(maxnterms,maxval(trove%extf(:)%Ncoeff))
   !
   if (job%verbose>=4) write(out, '(/1x,a,1x,i8)') 'max number of expansion terms among all fields:', maxnterms
   !
@@ -42620,12 +42622,13 @@ subroutine PTstore_contr_matelem(jrot)
   !
   func_tag = 'Tvib'
   !
-  !nterms = maxval(trove%g_vib(1:nmodes,1:nmodes)%Ncoeff)
-  !
-  target_index = 0 
-  target_index(1) = KinOrder
-  nterms= FLQindex(trove%Nmodes_e,target_index)
-  nterms0= FLQindex(trove%Nmodes-1,target_index)
+  terms = 0
+  nterms = 1
+  do imode=1, nmodes
+    do jmode=1, nmodes
+      call add_field_unique_terms(trove%g_vib(jmode,imode), nmodes, nterms, terms)
+    enddo
+  enddo
   !
   if (job%verbose>=4) write(out, '(/1x,a,1x,i8)') 'max number of expansion terms among all elements of Gvib:', nterms
 
@@ -42757,7 +42760,7 @@ subroutine PTstore_contr_matelem(jrot)
           !itosparse = 0
           loop_icoeff_g_vib : do icoeff = 1,trove%g_vib(jmode,imode)%Ncoeff
             !
-            if (trove%g_vib(jmode,imode)%ifromsparse(icoeff) == iterm) then 
+            if (all(trove%g_vib(jmode,imode)%IndexQ(1:nmodes,icoeff) == terms(1:nmodes,iterm))) then 
               !
               c = real(trove%g_vib(jmode,imode)%field(icoeff,0),kind=rk)
               !
@@ -42798,8 +42801,6 @@ subroutine PTstore_contr_matelem(jrot)
         !
         do icoeff = 1,trove%g_vib(jmode,imode)%Ncoeff
           !
-          iterm = trove%g_vib(jmode,imode)%ifromsparse(icoeff)
-          !
           c = real(trove%g_vib(jmode,imode)%field(icoeff,0),kind=rk)
           !
           if (abs(c)<coef_thresh) cycle
@@ -42816,14 +42817,14 @@ subroutine PTstore_contr_matelem(jrot)
                 kterm = ijmode_icomb_iterm(iclass,jterm,icomb)
                 term(imode1:imode2) = terms_uniq(imode1:imode2,kterm,iclass)
               enddo
-              if (all(term(:)==terms(:,iterm))) match = .true.
+              if (all(term(:)==trove%g_vib(jmode,imode)%IndexQ(1:nmodes,icoeff))) match = .true.
               if (match) exit
             enddo
             if (match) exit
           enddo
           if (.not.match) then
             write(out,my_fmt) 'PTstore_contr_matelem error: failed while checking the Gvib expansion term = (', &
-                              terms(:,iterm), ')'
+                              trove%g_vib(jmode,imode)%IndexQ(1:nmodes,icoeff), ')'
             stop
           endif
         enddo
@@ -42844,12 +42845,13 @@ subroutine PTstore_contr_matelem(jrot)
       !
       func_tag = 'Tcor'
       !
-      !nterms = maxval(trove%g_cor(1:nmodes,1:3)%Ncoeff)
-      !
-      target_index = 0 
-      target_index(1) = KinOrder
-      nterms= FLQindex(trove%Nmodes_e,target_index)
-      nterms0= FLQindex(trove%Nmodes-1,target_index)
+      terms = 0
+      nterms = 1
+      do imode=1, 3
+        do jmode=1, nmodes
+          call add_field_unique_terms(trove%g_cor(jmode,imode), nmodes, nterms, terms)
+        enddo
+      enddo
       !
       if (job%verbose>=4) write(out, '(/1x,a,1x,i8)') 'max number of expansion terms among all elements of Gcor:',nterms
 
@@ -42961,7 +42963,7 @@ subroutine PTstore_contr_matelem(jrot)
               c = 0 
               loop_icoeff_g_cor : do icoeff = 1,trove%g_cor(jmode,imode)%Ncoeff
                 !
-                if (trove%g_cor(jmode,imode)%ifromsparse(icoeff) == iterm) then 
+                if (all(trove%g_cor(jmode,imode)%IndexQ(1:nmodes,icoeff) == terms(1:nmodes,iterm))) then 
                   !
                   c = real(trove%g_cor(jmode,imode)%field(icoeff,0),kind=rk)
                   !
@@ -42999,8 +43001,7 @@ subroutine PTstore_contr_matelem(jrot)
              write(my_fmt,'(a,i0,a)') "(/a,1x,",nmodes,"(1x,i3),1x,a)"
              do icoeff = 1,trove%g_cor(jmode,imode)%Ncoeff
                !
-               iterm = trove%g_cor(jmode,imode)%ifromsparse(icoeff)
-               c = real(trove%g_cor(jmode,imode)%field(iterm,0),kind=rk)
+               c = real(trove%g_cor(jmode,imode)%field(icoeff,0),kind=rk)
                if (abs(c)<coef_thresh) cycle
                match = .false.
                ! loop over combinations of classes
@@ -43015,14 +43016,14 @@ subroutine PTstore_contr_matelem(jrot)
                      kterm = ijmode_icomb_iterm(iclass,jterm,icomb)
                      term(imode1:imode2) = terms_uniq(imode1:imode2,kterm,iclass)
                    enddo
-                   if (all(term(:)==terms(:,iterm))) match = .true.
+                   if (all(term(:)==trove%g_cor(jmode,imode)%IndexQ(1:nmodes,icoeff))) match = .true.
                    if (match) exit
                  enddo
                  if (match) exit
                enddo
                if (.not.match) then
-                   write(out,my_fmt) 'PTstore_contr_matelem error: failed while checking the Gvib expansion term = (', &
-                                     terms(:,iterm), ')'
+                   write(out,my_fmt) 'PTstore_contr_matelem error: failed while checking the Gcor expansion term = (', &
+                                     trove%g_cor(jmode,imode)%IndexQ(1:nmodes,icoeff), ')'
 
 
                  stop
@@ -43043,10 +43044,13 @@ subroutine PTstore_contr_matelem(jrot)
       !
       func_tag = 'Trot'
       !
-      !nterms = maxval(trove%g_rot(1:3,1:3)%Ncoeff)
-      target_index = 0 
-      target_index(1) = KinOrder
-      nterms= FLQindex(trove%Nmodes_e,target_index)
+      terms = 0
+      nterms = 1
+      do imode=1, 3
+        do jmode=1, 3
+          call add_field_unique_terms(trove%g_rot(jmode,imode), nmodes, nterms, terms)
+        enddo
+      enddo
       !
       if (job%verbose>=4) write(out, '(/1x,a,1x,i8)') 'max number of expansion terms among all elements of Grot:', nterms
       !
@@ -43147,7 +43151,7 @@ subroutine PTstore_contr_matelem(jrot)
               c = 0 
               loop_icoeff_g_rot : do icoeff = 1,trove%g_rot(jmode,imode)%Ncoeff
                 !
-                if (trove%g_rot(jmode,imode)%ifromsparse(icoeff) == iterm) then 
+                if (all(trove%g_rot(jmode,imode)%IndexQ(1:nmodes,icoeff) == terms(1:nmodes,iterm))) then 
                   !
                   c = real(trove%g_rot(jmode,imode)%field(icoeff,0),kind=rk)
                   !
@@ -43185,8 +43189,7 @@ subroutine PTstore_contr_matelem(jrot)
              write(my_fmt,'(a,i0,a)') "(/a,1x,",nmodes,"(1x,i3),1x,a)"
              do icoeff = 1,trove%g_rot(jmode,imode)%Ncoeff
                !
-               iterm = trove%g_rot(jmode,imode)%ifromsparse(icoeff)
-               c = real(trove%g_rot(jmode,imode)%field(iterm,0),kind=rk)
+               c = real(trove%g_rot(jmode,imode)%field(icoeff,0),kind=rk)
                if (abs(c)<coef_thresh) cycle
                match = .false.
                ! loop over combinations of classes
@@ -43201,14 +43204,14 @@ subroutine PTstore_contr_matelem(jrot)
                      kterm = ijmode_icomb_iterm(iclass,jterm,icomb)
                      term(imode1:imode2) = terms_uniq(imode1:imode2,kterm,iclass)
                    enddo
-                   if (all(term(:)==terms(:,iterm))) match = .true.
+                   if (all(term(:)==trove%g_rot(jmode,imode)%IndexQ(1:nmodes,icoeff))) match = .true.
                    if (match) exit
                  enddo
                  if (match) exit
                enddo
                if (.not.match) then
-                 write(out,my_fmt) 'PTstore_contr_matelem error: failed while checking the Gvib expansion term = (', &
-                                   terms(:,iterm), ')'
+                 write(out,my_fmt) 'PTstore_contr_matelem error: failed while checking the Grot expansion term = (', &
+                                   trove%g_rot(jmode,imode)%IndexQ(1:nmodes,icoeff), ')'
                  stop
                endif
              enddo
@@ -43229,12 +43232,9 @@ subroutine PTstore_contr_matelem(jrot)
   !
   func_tag = 'Vpot'
   !
-  !nterms = trove%poten%Ncoeff
-  !
-  target_index = 0 
-  target_index(1) = PotOrder
-  nterms= FLQindex(trove%Nmodes_e,target_index)
-  nterms0= FLQindex(trove%Nmodes-1,target_index)
+  terms = 0
+  nterms = 1
+  call add_field_unique_terms(trove%poten, nmodes, nterms, terms)
   !
   if (job%verbose>=4) write(out, '(/1x,a,1x,i8)') 'number of expansion terms:', nterms
   !
@@ -43321,7 +43321,7 @@ subroutine PTstore_contr_matelem(jrot)
       c = 0 
       loop_icoeff_poten : do icoeff = 1,trove%poten%Ncoeff
         !
-        if (trove%poten%ifromsparse(icoeff) == iterm) then 
+        if (all(trove%poten%IndexQ(1:nmodes,icoeff) == terms(1:nmodes,iterm))) then 
           !
           c = real(trove%poten%field(icoeff,0),kind=rk)
           !
@@ -43358,9 +43358,7 @@ subroutine PTstore_contr_matelem(jrot)
      !
      do icoeff = 1,trove%poten%Ncoeff
        !
-       iterm = trove%poten%ifromsparse(icoeff)
-       !
-       c = real(trove%poten%field(iterm,0),kind=rk)
+       c = real(trove%poten%field(icoeff,0),kind=rk)
        if (abs(c)<coef_thresh) cycle
        match = .false.
        ! loop over combinations of classes
@@ -43375,14 +43373,14 @@ subroutine PTstore_contr_matelem(jrot)
              kterm = ijmode_icomb_iterm(iclass,jterm,icomb)
              term(imode1:imode2) = terms_uniq(imode1:imode2,kterm,iclass)
            enddo
-           if (all(term(:)==terms(:,iterm))) match = .true.
+           if (all(term(:)==trove%poten%IndexQ(1:nmodes,icoeff))) match = .true.
            if (match) exit
          enddo
          if (match) exit
        enddo
        if (.not.match) then
-         write(out,my_fmt) 'PTstore_contr_matelem error: failed while checking the Gvib expansion term = (', &
-                            terms(:,iterm), ')'
+         write(out,my_fmt) 'PTstore_contr_matelem error: failed while checking the PES expansion term = (', &
+                            trove%poten%IndexQ(1:nmodes,icoeff), ')'
          stop
        endif
      enddo
@@ -43398,12 +43396,9 @@ subroutine PTstore_contr_matelem(jrot)
   !
   func_tag = 'pseu'
   !
-  !nterms = trove%pseudo%Ncoeff
-  !
-  target_index = 0 
-  target_index(1) = KinOrder
-  nterms= FLQindex(trove%Nmodes_e,target_index)
-  nterms0= FLQindex(trove%Nmodes-1,target_index)
+  terms = 0
+  nterms = 1
+  call add_field_unique_terms(trove%pseudo, nmodes, nterms, terms)
   !
   if (job%verbose>=4) write(out, '(/1x,a,1x,i8)') 'number of expansion terms:', nterms
   !
@@ -43490,7 +43485,7 @@ subroutine PTstore_contr_matelem(jrot)
       c = 0 
       loop_icoeff_pseudo : do icoeff = 1,trove%pseudo%Ncoeff
         !
-        if (trove%pseudo%ifromsparse(icoeff) == iterm) then 
+        if (all(trove%pseudo%IndexQ(1:nmodes,icoeff) == terms(1:nmodes,iterm))) then 
           !
           c = real(trove%pseudo%field(icoeff,0),kind=rk)
           !
@@ -43526,9 +43521,7 @@ subroutine PTstore_contr_matelem(jrot)
      write(my_fmt,'(a,i0,a)') "(/a,1x,",nmodes,"(1x,i3),1x,a)"
      do icoeff = 1,trove%pseudo%Ncoeff
        !
-       iterm = trove%pseudo%ifromsparse(icoeff)
-       !
-       c = real(trove%pseudo%field(iterm,0),kind=rk)
+       c = real(trove%pseudo%field(icoeff,0),kind=rk)
        if (abs(c)<coef_thresh) cycle
        match = .false.
        ! loop over combinations of classes
@@ -43543,15 +43536,14 @@ subroutine PTstore_contr_matelem(jrot)
              kterm = ijmode_icomb_iterm(iclass,jterm,icomb)
              term(imode1:imode2) = terms_uniq(imode1:imode2,kterm,iclass)
            enddo
-           if (all(term(:)==terms(:,iterm))) match = .true.
+           if (all(term(:)==trove%pseudo%IndexQ(1:nmodes,icoeff))) match = .true.
            if (match) exit
          enddo
          if (match) exit
        enddo
        if (.not.match) then
-         write(out,my_fmt) 'PTstore_contr_matelem error: failed while checking the Gvib expansion term = (', &
-                            terms(:,iterm), ')'
-         stop
+         write(out,my_fmt) 'PTstore_contr_matelem error: failed while checking the pseudo expansion term = (', &
+                            trove%pseudo%IndexQ(1:nmodes,icoeff), ')'
          stop
        endif
      enddo
@@ -43570,12 +43562,13 @@ subroutine PTstore_contr_matelem(jrot)
      !
      func_tag = 'extF'
      !
-     !nterms = maxval(trove%extf(:)%Ncoeff)
-     !
-     target_index = 0 
-     target_index(1) = ExtFOrder
-     nterms= FLQindex(trove%Nmodes_e,target_index)
-     nterms0= FLQindex(trove%Nmodes-1,target_index)
+     terms = 0
+     nterms = 1
+     if (associated(trove%extf)) then
+       do ipar=1, extF_rank
+         call add_field_unique_terms(trove%extf(ipar), nmodes, nterms, terms)
+       enddo
+     endif
      !
      if (job%verbose>=4) write(out, '(/1x,a,1x,i8)') 'number of expansion terms:', nterms
      !
@@ -43666,7 +43659,7 @@ subroutine PTstore_contr_matelem(jrot)
            c = 0 
            loop_icoeff_extF: do icoeff = 1,trove%extF(ipar)%Ncoeff
              !
-             if (trove%extF(ipar)%ifromsparse(icoeff) == iterm) then 
+             if (all(trove%extF(ipar)%IndexQ(1:nmodes,icoeff) == terms(1:nmodes,iterm))) then 
                !
                c = real(trove%extF(ipar)%field(icoeff,0),kind=rk)
                !
@@ -43705,8 +43698,6 @@ subroutine PTstore_contr_matelem(jrot)
           !
           do icoeff = 1,trove%extF(ipar)%Ncoeff
             !
-            iterm = trove%extF(ipar)%ifromsparse(icoeff)
-
             c = real(trove%extF(ipar)%field(icoeff,0),kind=rk)
             if (abs(c)<coef_thresh) cycle
             match = .false.
@@ -43722,14 +43713,14 @@ subroutine PTstore_contr_matelem(jrot)
                   kterm = ijmode_icomb_iterm(iclass,jterm,icomb)
                   term(imode1:imode2) = terms_uniq(imode1:imode2,kterm,iclass)
                 enddo
-                if (all(term(:)==terms(:,iterm))) match = .true.
+                if (all(term(:)==trove%extF(ipar)%IndexQ(1:nmodes,icoeff))) match = .true.
                 if (match) exit
               enddo
               if (match) exit
             enddo
             if (.not.match) then
-                 write(out,my_fmt) 'PTstore_contr_matelem error: failed while checking the Gvib expansion term = (', &
-                                    terms(:,iterm), ')'
+                 write(out,my_fmt) 'PTstore_contr_matelem error: failed while checking the extF expansion term = (', &
+                                    trove%extF(ipar)%IndexQ(1:nmodes,icoeff), ')'
               stop
             endif
           enddo
@@ -43765,6 +43756,31 @@ subroutine PTstore_contr_matelem(jrot)
   !
   if (job%verbose>=3) call MemoryReport
   if (job%verbose>=3) call TimerReport
+  !
+contains
+  !
+  subroutine add_field_unique_terms(fl, nmodes_loc, nterms_loc, terms_loc)
+    type(FLpolynomT), intent(in) :: fl
+    integer(ik), intent(in) :: nmodes_loc
+    integer(ik), intent(inout) :: nterms_loc
+    integer(ik), intent(inout) :: terms_loc(:,:)
+    integer(ik) :: ic, it
+    logical :: found
+    if (.not.associated(fl%IndexQ)) return
+    do ic = 1, fl%Ncoeff
+      found = .false.
+      do it = 1, nterms_loc
+        if (all(terms_loc(1:nmodes_loc, it) == fl%IndexQ(1:nmodes_loc, ic))) then
+          found = .true.
+          exit
+        endif
+      enddo
+      if (.not.found) then
+        nterms_loc = nterms_loc + 1
+        terms_loc(1:nmodes_loc, nterms_loc) = fl%IndexQ(1:nmodes_loc, ic)
+      endif
+    enddo
+  end subroutine add_field_unique_terms
   !
 end subroutine PTstore_contr_matelem
 
