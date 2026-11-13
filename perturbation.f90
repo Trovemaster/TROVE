@@ -1827,14 +1827,16 @@ module perturbation
 ! By default PTcontr_index computes the number of (n1,n2,n3...) quanta in the 1D array 
 ! Index_nu(i,j) is optional, it gives the nu(i) quantum corresponding to the j-number in the 1D quanta-array 
 !
-  function PTcontr_index(jrot,v_target,Index_v) result (isum)
+  function PTcontr_index(jrot,v_target,Index_v,enercut_) result (isum)
 
      integer(ik),intent(in) :: jrot,v_target(0:PT%Nclasses)
      integer(ik),intent(inout), optional  :: Index_v(:,:)
+     real(rk),intent(in), optional  :: enercut_  ! cut on the zero-order energy (default: CONTRACTION enercut)
 
      integer(ik)            :: v_search(size(v_target)),v_target_vr(0:PT%Nclasses)
      integer(ik) :: iclass,Nclasses,isum,dm1,dm2
      logical     :: flag_go
+     real(rk)    :: ecut_contr
 
       if (present(Index_v)) then 
         dm1 = size(Index_v,dim=1)
@@ -1845,6 +1847,9 @@ module perturbation
             stop 'number of modes in Index_v /= Nclasses'
         endif 
       endif 
+      !
+      ecut_contr = job%enercutoff%contr
+      if (present(enercut_)) ecut_contr = enercut_
       !
       Nclasses = PT%Nclasses
       !
@@ -1925,7 +1930,7 @@ module perturbation
             !
           endif
           !
-          switch = (ener0<=job%enercutoff%contr.and.( pol<=job%Npolyads_contr).or.(spread<=job%cluster.and.pol<=PT%Npolyads) )
+          switch = (ener0<=ecut_contr.and.( pol<=job%Npolyads_contr).or.(spread<=job%cluster.and.pol<=PT%Npolyads) )
           if (trove%triatom_sing_resolve.or.count(job%bset_prop(:)%singular)>=2) then
              !if ( (job%vib_contract.and..not.trim(job%IOcontr_action)=='SAVE').or.jrot>0) then 
              if ( jrot>0 ) then 
@@ -2024,7 +2029,7 @@ module perturbation
             !
           endif
           !
-          if ( (ener0<=job%enercutoff%contr.and.( pol<=job%Npolyads_contr).or.(spread<=job%cluster.and.pol<=PT%Npolyads) ) & 
+          if ( (ener0<=ecut_contr.and.( pol<=job%Npolyads_contr).or.(spread<=job%cluster.and.pol<=PT%Npolyads) ) & 
               ! LINEAR MOLECULE -> requires optimization !!!
               .and.( (trove%lincoord==0.and.count(job%bset_prop(:)%singular)<2).or.( lquant==krot.or.jrot==0 ) ) ) then
              ! .and.( trove%lincoord==0.or.( contr(0)%eigen(v_search(0))%gamma==contr(PT%Nclasses)%eigen(v_search(PT%Nclasses))%gamma ) ) ) then
@@ -2891,6 +2896,11 @@ module perturbation
     type(PTlevelT),pointer    ::  cf
     integer(ik)       ::  mpoints, iattempts,maxattempts, mpoints_max,mpoints_dvr=1
     logical           ::  reduced_model,diagonal,singular_2D,singular_3D
+    logical           ::  ecut_class    ! CONTRACTION enercut is applied to the roots of this class in the root filter
+    logical           ::  beyond        ! the root is outside the polyad (or energy) limits of the contracted basis
+    logical,allocatable :: root_kept(:)
+    integer(ik)       ::  jcount,n_ecut
+    real(rk)          ::  tmax_kept
     real(ark)           ::  Nirr_rk(sym%Nrepresen)
     real(rk)          :: spread,tol
     !
@@ -2949,6 +2959,7 @@ module perturbation
        reduced_model = .false.
        singular_2D = .false.
        singular_3D = .false.
+       ecut_class = .false.
        !
        do i = 1,PT%mode_iclass(iclasses)
          !
@@ -3160,7 +3171,14 @@ module perturbation
          diag_='SYEVR'
          !diag_ = job%diagonalizer
          !
-         call PThamiltonianMat(jrot,nroots,diag_,job%enercutoff%contr)
+         ! All eigenpairs of the class Hamiltonian are computed (1e9 makes PThamiltonianMat use RANGE='A').
+         ! The CONTRACTION enercut is applied below, in the root filter, which keeps or removes the components
+         ! of a degenerate level together. A dsyevr energy window (RANGE='V') could return only one component
+         ! of a degenerate level, whose symmetry could then not be defined.
+         !
+         call PThamiltonianMat(jrot,nroots,diag_,1e9_rk)
+         !
+         ecut_class = .true.
          !
          if (nroots<1) then 
            !
@@ -3202,12 +3220,11 @@ module perturbation
        end if
        !
        allocate (count_index(nroots,Ndeg),count_degen(nroots),& 
-                 sample_vector(dimen),tmat(Ndeg,sym%maxdegen,Ndeg),fv(dimen),stat=alloc)
+                 sample_vector(dimen),fv(dimen),stat=alloc)
                  !
        call ArrayStart('PTcontracted:count_index' ,alloc,size(count_index),kind(count_index))
        call ArrayStart('PTcontracted:count_degen' ,alloc,size(count_degen),kind(count_degen))
        call ArrayStart('PTcontracted:sample_vector' ,alloc,size(sample_vector),kind(sample_vector))
-       call ArrayStart('PTcontracted:tmat' ,alloc,size(tmat),kind(tmat))
        call ArrayStart('PTcontracted:fv' ,alloc,size(fv),kind(fv))
        !
        contr(iclasses)%ilevel = 0 
@@ -3327,9 +3344,15 @@ module perturbation
          ipol = PTpolyadRules(nu)
          spread = PTquanta_spread(nu)
          !
+         ! outside the contracted basis: polyad above Npolyads_contr or, for the classes diagonalized with
+         ! dsyevr (ecut_class), term value above the CONTRACTION enercut (same definition as ener0 in PTcontr_index)
+         !
+         beyond = ipol>job%Npolyads_contr
+         if (ecut_class) beyond = beyond.or.PT%Ewhole%coeffs(iroot,1)-PT%Ewhole%coeffs(1,1)>job%enercutoff%contr
+         !
          ! apply the polyad- and cluster-thresholds only for the non-Harmonic basis 
          !
-         if ( ipol>job%Npolyads_contr.and.spread>job%cluster.and. &
+         if ( beyond.and.spread>job%cluster.and. &
               .not.( bs_t(kmode)%postprocess.and.bs_t(kmode)%type=='HARMONIC'.and.bs_t(kmode)%model/=1000.and..not.trove%DVR ).and.&
               .not.( abs( PT%Ewhole%coeffs(iroot,1)-PT%Ewhole%coeffs(iroot-1,1) )<job%degen_threshold.and.iroot-1==iroot_in ).and.& 
               .not.( (FLl2_coeffs.or.singular_3D) .and.abs( PT%lquant%icoeffs(iroot,1)-PT%lquant%icoeffs(iroot-1,1) )==0.and.iroot-1==iroot_in ) &  
@@ -3377,6 +3400,35 @@ module perturbation
        enddo
        !
        Ncount = icount
+       !
+       ! tmat (and transform below) are needed only for the degenerate groups found above:
+       ! their size is set by the largest group, not by the number of roots
+       !
+       Ndeg = maxval(count_degen(1:Ncount))
+       !
+       allocate (tmat(Ndeg,sym%maxdegen,Ndeg),stat=alloc)
+       call ArrayStart('PTcontracted:tmat' ,alloc,size(tmat),kind(tmat))
+       !
+       ! report the effect of the CONTRACTION enercut on this class
+       !
+       if (ecut_class.and.job%verbose>=2) then
+         !
+         allocate(root_kept(nroots),stat=alloc)
+         root_kept = .false.
+         do jcount = 1,Ncount
+           root_kept(count_index(jcount,1:count_degen(jcount))) = .true.
+         enddo
+         !
+         n_ecut = count(.not.root_kept(1:nroots).and.PT%Ewhole%coeffs(1:nroots,1)-PT%Ewhole%coeffs(1,1)>job%enercutoff%contr)
+         tmax_kept = maxval(PT%Ewhole%coeffs(1:nroots,1)-PT%Ewhole%coeffs(1,1),mask=root_kept(1:nroots))
+         !
+         write(out,"(/'Class ',i4,': ',i8,' of ',i8,' roots are above CONTRACTION enercut = ',f14.2,' and are not used')") &
+               iclasses,n_ecut,nroots,job%enercutoff%contr
+         write(out,"('            highest retained term value = ',f14.2)") tmax_kept
+         !
+         deallocate(root_kept)
+         !
+       endif
        !
        !mpoints = job%msample_points
        !
@@ -3643,19 +3695,10 @@ module perturbation
          call degenerate_symmetrization(Nelem,mpoints,transform(1:sym%Noper,1:Nelem,1:mpoints),&
                                         tmat(1:Nelem,1:sym%maxdegen,1:Nelem),tol,Nirr,Nirr_rk,characters,info,error)
          !
-         ! Sometimes the last level in the list does not have all degenerate components.
-         ! In this case we remove the last root and set nroots = nroots - 1
+         ! Sometimes the last level in the list does not have all degenerate components:
+         ! such a level is removed below if its symmetry cannot be defined (iattempts>=maxattempts)
          !
-         if (info==1.and.count_index(icount,1)+Nelem-1>nroots) then 
-           !
-           write(out,"(//'PTcontracted_prediag: the last level is  missing its pair, remove it!')")
-           Ncount = Ncount - 1
-           contr(iclasses)%nlevels = Ncount
-           contr(iclasses)%nroots  = nroots - Nelem
-           !
-           cycle icount_loop
-           !
-         elseif (info/=0) then
+         if (info/=0) then
            !
            if (PTuse_gauss_quadrature) then 
              !
@@ -3690,6 +3733,21 @@ module perturbation
            if (job%verbose>=4) write(out,"(28x,'attempt # ',i4,' sampling points again')") iattempts
            !
            if (iattempts>=maxattempts ) then
+             !
+             ! The last level of a truncated spectrum (nroots<dimen) can miss a degenerate component that lies
+             ! above the cut; its symmetry cannot be defined and the level is removed
+             !
+             if (count_index(icount,Nelem)==nroots.and.nroots<dimen) then
+               !
+               write(out,"(/'PTcontracted_prediag: the last level is missing its degenerate partner(s), remove it!')")
+               !
+               Ncount = Ncount - 1
+               contr(iclasses)%nlevels = Ncount
+               contr(iclasses)%nroots  = nroots - Nelem
+               !
+               cycle icount_loop
+               !
+             endif
              !
              if (PTuse_gauss_quadrature) write(out,"('PTcontracted_prediag: error is too large to determine the symmetry')")
              !
@@ -6653,6 +6711,8 @@ module perturbation
   character(len=cl) :: my_fmt !format for I/O specification
   !
   real(ark) :: Nirr_rk(sym%Nrepresen)
+  integer(ik) :: icoeff_poly
+  real(ark)   :: ener0_max
 
 
    if (job%verbose>=4) write(out,"(/'PTsymmetrization/start')") 
@@ -6746,6 +6806,24 @@ module perturbation
    endif 
    !
    icoeff = PTcontr_index(j,cnu_max,PT%contractive_space(:,:))
+   !
+   ! report the effect of the CONTRACTION enercut: the number of combinations of class levels
+   ! allowed by Npolyads without the energy cut and the largest zero-order energy that is kept
+   !
+   if (job%verbose>=2) then
+     !
+     icoeff_poly = PTcontr_index(j,cnu_max,enercut_=safe_max)
+     !
+     ener0_max = 0
+     do ib = 1,icoeff
+       ener0_max = max(ener0_max,real(PTcontrenergy_zero(PT%contractive_space(:,ib)),ark))
+     enddo
+     !
+     write(out,"(/'Contracted basis: ',i0,' of ',i0,' combinations of class levels allowed by Npolyads',&
+                &' are below CONTRACTION enercut = ',f14.2)") icoeff,icoeff_poly,job%enercutoff%contr
+     write(out,"('Largest zero-order energy in the contracted basis = ',f14.2)") ener0_max
+     !
+   endif
    !
    if (job%verbose>=5) then 
      do ib = 1,icoeff
@@ -35226,6 +35304,10 @@ end subroutine read_contr_matelem_expansion_classN
     !
     nmodes = PT%Nmodes
     !
+    ! size of the class basis used here: the number of roots passed from PTcontracted_prediagonalization,
+    ! i.e. all functions of the class for the dsyevr branch and the functions below the PRIMITIVES enercut
+    ! for the HARMONIC branches (the contracted vectors are longer then and only their first dimen components are used)
+    !
     dimen = nroots
     !
     kmode = PT%mode_class(iclasses,1)
@@ -35428,7 +35510,7 @@ end subroutine read_contr_matelem_expansion_classN
            !
            level_ = oldlevel(gamma_i,ideg_i,i)
            !
-           transf_i(:,i) = contr(iclasses)%eigen(level_)%vect(:,ideg_i)
+           transf_i(1:dimen,i) = contr(iclasses)%eigen(level_)%vect(1:dimen,ideg_i)
            !
          enddo
          !
@@ -35455,7 +35537,7 @@ end subroutine read_contr_matelem_expansion_classN
                 !
                 level_ = oldlevel(gamma_j,ideg_j,i)
                 !
-                transf_j(:,i) = contr(iclasses)%eigen(level_)%vect(:,ideg_j)
+                transf_j(1:dimen,i) = contr(iclasses)%eigen(level_)%vect(1:dimen,ideg_j)
                 !
               enddo
               !
